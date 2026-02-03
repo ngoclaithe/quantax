@@ -1,0 +1,114 @@
+import { create } from 'zustand';
+import { api } from '@/lib/api';
+import { useAuthStore } from './auth-store';
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  txHash?: string;
+  createdAt: string;
+}
+
+interface Wallet {
+  id: string;
+  balance: number;
+  lockedBalance: number;
+  transactions: Transaction[];
+}
+
+export interface WalletState {
+  isConnected: boolean;
+  address: string | null;
+  balance: number;
+  lockedBalance: number;
+  network: string;
+  transactions: Transaction[];
+  isLoading: boolean;
+  connectWallet: () => Promise<void>;
+  disconnectWallet: () => void;
+  fetchWallet: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on: (event: string, callback: (...args: unknown[]) => void) => void;
+    };
+  }
+}
+
+export const useWalletStore = create<WalletState>((set, get) => ({
+  isConnected: false,
+  address: null,
+  balance: 0,
+  lockedBalance: 0,
+  network: 'BSC Mainnet',
+  transactions: [],
+  isLoading: false,
+
+  connectWallet: async () => {
+    set({ isLoading: true });
+    try {
+      if (!window.ethereum) {
+        throw new Error('MetaMask not installed');
+      }
+
+      const accounts = (await window.ethereum.request({
+        method: 'eth_requestAccounts',
+      })) as string[];
+
+      if (accounts.length === 0) {
+        throw new Error('No accounts found');
+      }
+
+      const address = accounts[0];
+
+      const message = 'Login to BO Copytrade';
+      const signature = (await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, address],
+      })) as string;
+
+      await useAuthStore.getState().login(address, signature);
+
+      set({
+        isConnected: true,
+        address,
+      });
+
+      await get().fetchWallet();
+    } catch (e) {
+      console.error('Failed to connect wallet', e);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  disconnectWallet: () => {
+    useAuthStore.getState().logout();
+    set({
+      isConnected: false,
+      address: null,
+      balance: 0,
+      lockedBalance: 0,
+      transactions: [],
+    });
+  },
+
+  fetchWallet: async () => {
+    const token = useAuthStore.getState().token;
+    if (!token) return;
+    try {
+      const wallet = await api.get<Wallet>('/wallet', token);
+      set({
+        balance: Number(wallet.balance),
+        lockedBalance: Number(wallet.lockedBalance),
+        transactions: wallet.transactions,
+      });
+    } catch (e) {
+      console.error('Failed to fetch wallet', e);
+    }
+  },
+}));

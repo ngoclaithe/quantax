@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  TRADER
+}
+
+enum OrderDirection {
+  UP
+  DOWN
+}
+
+enum OrderStatus {
+  PENDING
+  LOCKED
+  SETTLED
+}
+
+enum TradeResult {
+  WIN
+  LOSE
+}
+
+enum CopyType {
+  FIXED
+  PERCENT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  LOCK
+  UNLOCK
+  SETTLE
+}
+
+model User {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique @map("wallet_address")
+  nickname      String?
+  avatarUrl     String?  @map("avatar_url")
+  isPublic      Boolean  @default(true) @map("is_public")
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  wallet        Wallet?
+  stats         UserStats?
+  trades        TradeOrder[]
+  copyTrader    CopyTrader?
+  
+  followedBy    CopyFollower[] @relation("Trader")
+  following     CopyFollower[] @relation("Follower")
+
+  @@map("users")
+}
+
+model UserStats {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  totalTrades Int      @default(0) @map("total_trades")
+  winTrades   Int      @default(0) @map("win_trades")
+  loseTrades  Int      @default(0) @map("lose_trades")
+  totalPnl    Decimal  @default(0) @db.Decimal(20, 2) @map("total_pnl")
+  winRate     Decimal  @default(0) @db.Decimal(5, 2) @map("win_rate")
+  
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("user_stats")
+}
+
+model Wallet {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  balance       Decimal  @default(0) @db.Decimal(20, 2)
+  lockedBalance Decimal  @default(0) @db.Decimal(20, 2) @map("locked_balance")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  
+  user          User     @relation(fields: [userId], references: [id])
+  transactions  WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id        String          @id @default(uuid())
+  walletId  String          @map("wallet_id")
+  type      TransactionType
+  amount    Decimal         @db.Decimal(20, 2)
+  txHash    String?         @map("tx_hash")
+  createdAt DateTime        @default(now()) @map("created_at")
+  
+  wallet    Wallet          @relation(fields: [walletId], references: [id])
+
+  @@map("wallet_transactions")
+}
+
+model TradingPair {
+  id         String   @id @default(uuid())
+  symbol     String   @unique
+  payoutRate Decimal  @db.Decimal(5, 2) @map("payout_rate")
+  isActive   Boolean  @default(true) @map("is_active")
+  
+  trades     TradeOrder[]
+
+  @@map("trading_pairs")
+}
+
+model TradeOrder {
+  id          String         @id @default(uuid())
+  userId      String         @map("user_id")
+  pairId      String         @map("pair_id")
+  direction   OrderDirection
+  amount      Decimal        @db.Decimal(20, 2)
+  payoutRate  Decimal        @db.Decimal(5, 2) @map("payout_rate")
+  entryPrice  Decimal?       @db.Decimal(20, 8) @map("entry_price")
+  openTime    DateTime       @default(now()) @map("open_time")
+  expireTime  DateTime       @map("expire_time")
+  status      OrderStatus    @default(PENDING)
+  
+  user        User           @relation(fields: [userId], references: [id])
+  pair        TradingPair    @relation(fields: [pairId], references: [id])
+  result      TradeOrderResult?
+  
+  sourceCopy  CopyTradeOrder[] @relation("SourceTrade")
+  copiedFrom  CopyTradeOrder[] @relation("FollowerTrade")
+
+  @@map("trade_orders")
+}
+
+model TradeOrderResult {
+  id          String      @id @default(uuid())
+  tradeId     String      @unique @map("trade_id")
+  settlePrice Decimal     @db.Decimal(20, 8) @map("settle_price")
+  result      TradeResult
+  profit      Decimal     @db.Decimal(20, 2)
+  settledAt   DateTime    @default(now()) @map("settled_at")
+  
+  trade       TradeOrder  @relation(fields: [tradeId], references: [id])
+
+  @@map("trade_order_results")
+}
+
+model CopyTrader {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  isEnabled Boolean  @default(true) @map("is_enabled")
+  riskScore Int      @default(50) @map("risk_score")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("copy_traders")
+}
+
+model CopyFollower {
+  id          String   @id @default(uuid())
+  traderId    String   @map("trader_id")
+  followerId  String   @map("follower_id")
+  copyType    CopyType @map("copy_type")
+  copyValue   Decimal  @db.Decimal(20, 2) @map("copy_value")
+  maxAmount   Decimal  @db.Decimal(20, 2) @map("max_amount")
+  stopLoss    Decimal? @db.Decimal(20, 2) @map("stop_loss")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  trader      User     @relation("Trader", fields: [traderId], references: [id])
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+
+  @@unique([followerId, traderId])
+  @@map("copy_followers")
+}
+
+model CopyTradeOrder {
+  id              String     @id @default(uuid())
+  sourceTradeId   String     @map("source_trade_id")
+  followerTradeId String     @map("follower_trade_id")
+  
+  sourceTrade     TradeOrder @relation("SourceTrade", fields: [sourceTradeId], references: [id])
+  followerTrade   TradeOrder @relation("FollowerTrade", fields: [followerTradeId], references: [id])
+
+  @@map("copy_trade_orders")
+}
+
+model PriceFeedLog {
+  id        String   @id @default(uuid())
+  pair      String
+  price     Decimal  @db.Decimal(20, 8)
+  source    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("price_feed_logs")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  role         String   @default("admin")
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  logs         AdminLog[]
+
+  @@map("admin_users")
+}
+
+model AdminLog {
+  id        String   @id @default(uuid())
+  adminId   String   @map("admin_id")
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+
+  @@map("admin_logs")
+}
