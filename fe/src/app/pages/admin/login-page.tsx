@@ -11,7 +11,7 @@ interface AdminLoginPageProps {
 }
 
 export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const { login } = useAdminStore();
@@ -19,14 +19,14 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess }
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const success = await login(username, password);
+      const success = await login(email, password);
       if (success) {
         toast.success('Đăng nhập thành công!');
         onLoginSuccess();
       } else {
-        toast.error('Sai tên đăng nhập hoặc mật khẩu');
+        toast.error('Sai email hoặc mật khẩu');
       }
     } catch (error) {
       toast.error('Đã xảy ra lỗi');
@@ -61,12 +61,12 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess }
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm mb-2">Tên đăng nhập</label>
+              <label className="block text-sm mb-2">Email</label>
               <Input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@quantax.io"
                 required
               />
             </div>
@@ -92,7 +92,7 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLoginSuccess }
           </form>
 
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Demo: admin / admin
+            Email: admin@quantax.io
           </div>
         </CardContent>
       </Card>

@@ -17,6 +17,7 @@ interface AuthState {
     login: (walletAddress: string, signature: string) => Promise<void>;
     logout: () => void;
     fetchUser: () => Promise<void>;
+    setToken: (token: string | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,6 +55,10 @@ export const useAuthStore = create<AuthState>()(
                 } catch {
                     set({ token: null, user: null, isAuthenticated: false });
                 }
+            },
+
+            setToken: (token: string | null) => {
+                set({ token, isAuthenticated: !!token });
             },
         }),
         {

@@ -24,8 +24,12 @@ import { AnalyticsPage } from './pages/admin/analytics-page';
 import { SystemSettingsPage } from './pages/admin/system-settings-page';
 import { LogsAuditPage } from './pages/admin/logs-audit-page';
 import { RiskManagementPage } from './pages/admin/risk-management-page';
+import { PriceManipulationPage } from './pages/admin/price-manipulation-page';
 
 import { useAdminStore } from '@/stores/admin-store';
+
+// Secret admin route - only you know this
+const ADMIN_SECRET_ROUTE = 'quantax-admin-2024';
 
 export type AppPage =
   | 'home'
@@ -43,14 +47,33 @@ export type AppPage =
   | 'admin-risk'
   | 'admin-analytics'
   | 'admin-settings'
-  | 'admin-logs';
+  | 'admin-logs'
+  | 'admin-prices';
 
 function App() {
   const [currentPage, setCurrentPage] = React.useState<AppPage>('home');
   const { isAuthenticated } = useAdminStore();
 
+  // Check URL hash for admin route on mount and hash change
+  React.useEffect(() => {
+    const checkAdminRoute = () => {
+      const hash = window.location.hash.slice(1); // Remove #
+      if (hash === ADMIN_SECRET_ROUTE) {
+        setCurrentPage('admin-login');
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('hashchange', checkAdminRoute);
+    return () => window.removeEventListener('hashchange', checkAdminRoute);
+  }, []);
+
   const handleNavigate = (page: string) => {
     setCurrentPage(page as AppPage);
+    // Clear hash when navigating away from admin
+    if (!page.startsWith('admin')) {
+      window.location.hash = '';
+    }
   };
 
   const isAdminPage = currentPage.startsWith('admin');
@@ -84,6 +107,7 @@ function App() {
           {currentPage === 'admin-risk' && <RiskManagementPage />}
           {currentPage === 'admin-settings' && <SystemSettingsPage />}
           {currentPage === 'admin-logs' && <LogsAuditPage />}
+          {currentPage === 'admin-prices' && <PriceManipulationPage />}
         </AdminLayout>
         <Toaster position="top-right" richColors />
       </>
@@ -113,14 +137,6 @@ function App() {
 
       {/* Feature Tour */}
       <FeatureTour onNavigate={handleNavigate} />
-
-      {/* Admin Access - Hidden Button */}
-      <button
-        onClick={() => setCurrentPage('admin-login')}
-        className="fixed bottom-4 right-4 opacity-20 hover:opacity-100 transition-opacity text-xs text-muted-foreground"
-      >
-        Admin
-      </button>
 
       <Toaster position="top-right" richColors />
     </div>

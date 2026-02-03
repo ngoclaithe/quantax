@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminConfigService } from './admin-config.service';
 import { AdminMonitoringService } from './admin-monitoring.service';
+import { PriceManipulationService } from '../oracle/price-manipulation.service';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -9,6 +10,7 @@ export class AdminController {
     constructor(
         private configService: AdminConfigService,
         private monitoringService: AdminMonitoringService,
+        private priceManipulation: PriceManipulationService,
     ) { }
 
     @Get('dashboard')
@@ -44,5 +46,83 @@ export class AdminController {
     @Post('system/resume')
     async resume() {
         return this.configService.resumeTrading();
+    }
+
+    // ============ Price Manipulation Endpoints ============
+
+    /**
+     * Get all current prices
+     */
+    @Get('prices')
+    async getAllPrices() {
+        return {
+            prices: this.priceManipulation.getAllBasePrices(),
+            activeTargets: this.priceManipulation.getActivePriceTargets(),
+        };
+    }
+
+    /**
+     * Get current price for a specific pair
+     */
+    @Get('prices/:pair')
+    async getPrice(@Param('pair') pair: string) {
+        const decodedPair = decodeURIComponent(pair);
+        return {
+            pair: decodedPair,
+            price: this.priceManipulation.getCurrentPrice(decodedPair),
+        };
+    }
+
+    /**
+     * Set a price target for a symbol
+     * Price will gradually move towards target over the specified duration
+     */
+    @Post('prices/target')
+    async setPriceTarget(
+        @Body() body: { pair: string; targetPrice: number; durationSeconds: number }
+    ) {
+        const target = await this.priceManipulation.setPriceTarget(
+            body.pair,
+            body.targetPrice,
+            body.durationSeconds,
+        );
+        return {
+            success: true,
+            target,
+        };
+    }
+
+    /**
+     * Set immediate price for a symbol (no gradual transition)
+     */
+    @Post('prices/set')
+    async setImmediatePrice(@Body() body: { pair: string; price: number }) {
+        this.priceManipulation.setBasePrice(body.pair, body.price);
+        return {
+            success: true,
+            pair: body.pair,
+            price: body.price,
+        };
+    }
+
+    /**
+     * Cancel an active price target
+     */
+    @Delete('prices/target/:pair')
+    async cancelPriceTarget(@Param('pair') pair: string) {
+        const decodedPair = decodeURIComponent(pair);
+        const cancelled = this.priceManipulation.cancelPriceTarget(decodedPair);
+        return {
+            success: cancelled,
+            pair: decodedPair,
+        };
+    }
+
+    /**
+     * Get active price targets
+     */
+    @Get('prices/targets/active')
+    async getActiveTargets() {
+        return this.priceManipulation.getActivePriceTargets();
     }
 }

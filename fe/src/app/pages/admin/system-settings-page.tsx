@@ -1,11 +1,20 @@
 import React from 'react';
-import { Settings, Save, Power, Database, Radio, RefreshCw } from 'lucide-react';
+import { Settings, Save, Power, Database, Radio, RefreshCw, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Switch } from '@/app/components/ui/switch';
 import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
+
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
+};
 
 export const SystemSettingsPage: React.FC = () => {
     const [loading, setLoading] = React.useState(false);

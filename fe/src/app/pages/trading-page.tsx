@@ -5,6 +5,7 @@ import { PriceChart } from '@/app/components/price-chart';
 import { TradingPanel } from '@/app/components/trading-panel';
 import { OrderList } from '@/app/components/order-list';
 import { WalletConnectPrompt } from '@/app/components/wallet-connect-prompt';
+import { socketService } from '@/lib/socket';
 import * as Tabs from '@radix-ui/react-tabs';
 
 export const TradingPage: React.FC = () => {
@@ -16,8 +17,27 @@ export const TradingPage: React.FC = () => {
     updatePrice,
     fetchPairs,
     fetchMyTrades,
+    selectedPair,
   } = useTradingStore();
   const { isConnected } = useWalletStore();
+
+  // Connect to WebSocket and subscribe to price updates
+  React.useEffect(() => {
+    socketService.connect();
+
+    const handlePriceUpdate = (data: { pair: string; price: number }) => {
+      // Only update if it matches the selected pair or if no pair is selected (use first one)
+      if (!selectedPair || data.pair === selectedPair.symbol) {
+        updatePrice(data.price);
+      }
+    };
+
+    socketService.onPriceUpdate(handlePriceUpdate);
+
+    return () => {
+      socketService.offPriceUpdate(handlePriceUpdate);
+    };
+  }, [updatePrice, selectedPair]);
 
   React.useEffect(() => {
     fetchPairs();
@@ -30,28 +50,6 @@ export const TradingPage: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [isConnected, fetchMyTrades]);
-
-  React.useEffect(() => {
-    const generatePrice = () => {
-      const basePrice = 43250;
-      const variation = Math.sin(Date.now() / 10000) * 500 + (Math.random() - 0.5) * 100;
-      return basePrice + variation;
-    };
-
-    const interval = setInterval(() => {
-      const newPrice = generatePrice();
-      updatePrice(newPrice);
-    }, 2000);
-
-    const initialData = Array.from({ length: 20 }, (_, i) => ({
-      time: Date.now() - (20 - i) * 2000,
-      price: generatePrice(),
-    }));
-
-    initialData.forEach((d) => updatePrice(d.price));
-
-    return () => clearInterval(interval);
-  }, [updatePrice]);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -100,3 +98,4 @@ export const TradingPage: React.FC = () => {
     </div>
   );
 };
+

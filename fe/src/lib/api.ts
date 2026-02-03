@@ -46,4 +46,19 @@ export const api = {
         if (!res.ok) throw new Error(await res.text());
         return res.json();
     },
+
+    async delete<T>(endpoint: string, token?: string): Promise<T> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'DELETE',
+            headers,
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    },
 };

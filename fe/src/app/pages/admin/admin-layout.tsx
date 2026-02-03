@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Settings, TrendingUp, Users, Shield, LogOut, Activity, FileText, Sliders } from 'lucide-react';
+import { LayoutDashboard, Settings, TrendingUp, Users, Shield, LogOut, Activity, FileText, Sliders, DollarSign } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useAdminStore } from '@/stores/admin-store';
 
@@ -17,6 +17,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentPage, onNavigat
     { id: 'admin-trades', label: 'Giám sát lệnh', icon: Activity },
     { id: 'admin-traders', label: 'Quản lý Traders', icon: Users },
     { id: 'admin-pairs', label: 'Cấu hình Pairs', icon: Sliders },
+    { id: 'admin-prices', label: 'Điều chỉnh Giá', icon: DollarSign },
     { id: 'admin-risk', label: 'Rủi ro & Pool', icon: Shield },
     { id: 'admin-analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'admin-settings', label: 'Cài đặt hệ thống', icon: Settings },
@@ -57,8 +58,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentPage, onNavigat
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive
-                    ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/30'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/30'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                   }`}
               >
                 <Icon className="h-5 w-5" />

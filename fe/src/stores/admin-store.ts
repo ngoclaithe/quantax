@@ -129,16 +129,29 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     await get().fetchPairs();
   },
 
-  login: async (username, password) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    if (username === 'admin' && password === 'admin') {
-      set({ isAuthenticated: true, userRole: 'admin' });
+  login: async (email, password) => {
+    try {
+      const response = await api.post<{
+        access_token: string;
+        admin: { id: string; email: string; role: string };
+      }>('/admin-auth/login', { email, password });
+
+      // Store the admin token
+      useAuthStore.getState().setToken(response.access_token);
+
+      set({
+        isAuthenticated: true,
+        userRole: response.admin.role as 'admin' | 'operator' | 'viewer',
+      });
       return true;
+    } catch (error) {
+      console.error('Admin login failed:', error);
+      return false;
     }
-    return false;
   },
 
   logout: () => {
+    useAuthStore.getState().setToken(null);
     set({ isAuthenticated: false, userRole: null });
   },
 }));
