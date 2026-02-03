@@ -38,7 +38,7 @@ logs/
 # Other
 .gemini/
 tmp/
-*.jpg
-*.png
-*.mp4
-*.MOV
+# *.jpg
+# *.png
+# *.mp4
+# *.MOV
