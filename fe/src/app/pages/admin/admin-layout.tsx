@@ -35,7 +35,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentPage, onNavigat
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3 mb-3">
             <img
-              src="/images/logo.png"
+              src="/images/logo-optimized.webp"
               alt="Quantax"
               className="h-10 w-10 rounded-xl object-contain"
             />

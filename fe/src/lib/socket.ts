@@ -71,11 +71,11 @@ class SocketService {
         }
     }
 
-    onPriceUpdate(callback: (data: { pair: string; price: number }) => void) {
+    onPriceUpdate(callback: (data: { pair: string; price: number; timestamp?: number }) => void) {
         this.socket?.on('price:update', callback);
     }
 
-    offPriceUpdate(callback: (data: { pair: string; price: number }) => void) {
+    offPriceUpdate(callback: (data: { pair: string; price: number; timestamp?: number }) => void) {
         this.socket?.off('price:update', callback);
     }
 

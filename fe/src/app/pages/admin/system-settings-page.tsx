@@ -1,10 +1,9 @@
 import React from 'react';
-import { Settings, Save, Power, Database, Radio, RefreshCw, Activity } from 'lucide-react';
+import { Save, Power, Database, RefreshCw, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Switch } from '@/app/components/ui/switch';
-import { Badge } from '@/app/components/ui/badge';
 import { toast } from 'sonner';
 
 const formatCurrency = (value: number) => {
@@ -27,7 +26,7 @@ export const SystemSettingsPage: React.FC = () => {
         rpcUrl: 'https://bsc-dataseed.binance.org/',
     });
 
-    const [oracleStatus, setOracleStatus] = React.useState([
+    const [oracleStatus] = React.useState([
         { name: 'BTC/USDT', price: 43250.50, lastUpdate: '2s ago', status: 'active', source: 'Chainlink' },
         { name: 'ETH/USDT', price: 2250.80, lastUpdate: '5s ago', status: 'active', source: 'Chainlink' },
         { name: 'BNB/USDT', price: 310.20, lastUpdate: '1s ago', status: 'active', source: 'Internal' },

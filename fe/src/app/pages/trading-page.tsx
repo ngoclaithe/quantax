@@ -1,34 +1,109 @@
 import React from 'react';
 import { useTradingStore } from '@/stores/trading-store';
-import { useWalletStore } from '@/stores/wallet-store';
-import { PriceChart } from '@/app/components/price-chart';
+import { useAuthStore } from '@/stores/auth-store';
+import { CandlestickChart } from '@/app/components/candlestick-chart';
 import { TradingPanel } from '@/app/components/trading-panel';
 import { OrderList } from '@/app/components/order-list';
 import { WalletConnectPrompt } from '@/app/components/wallet-connect-prompt';
 import { socketService } from '@/lib/socket';
 import * as Tabs from '@radix-ui/react-tabs';
 
+interface CandleData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
 export const TradingPage: React.FC = () => {
   const {
-    priceHistory,
     currentPrice,
     openOrders,
     closedOrders,
+    timeframe,
     updatePrice,
     fetchPairs,
     fetchMyTrades,
     selectedPair,
   } = useTradingStore();
-  const { isConnected } = useWalletStore();
+  const { isAuthenticated } = useAuthStore();
+
+  const [candleData, setCandleData] = React.useState<CandleData[]>([]);
+  const lastCandleTimeRef = React.useRef<number>(0);
+
+  // Use BTC/USD as default - matches BE oracle symbol
+  const currentSymbol = selectedPair?.symbol || 'BTC/USD';
+
+  // Initialize candle data
+  React.useEffect(() => {
+    setCandleData([]);
+
+    const loadCandles = async () => {
+      const candles = await useTradingStore.getState().fetchCandles(currentSymbol);
+      if (candles && candles.length > 0) {
+        setCandleData(candles);
+        const lastCandle = candles[candles.length - 1];
+        lastCandleTimeRef.current = lastCandle.time;
+      }
+    };
+
+    loadCandles();
+  }, [currentSymbol]);
 
   // Connect to WebSocket and subscribe to price updates
   React.useEffect(() => {
     socketService.connect();
 
-    const handlePriceUpdate = (data: { pair: string; price: number }) => {
-      // Only update if it matches the selected pair or if no pair is selected (use first one)
-      if (!selectedPair || data.pair === selectedPair.symbol) {
+    const handlePriceUpdate = (data: { pair: string; price: number; timestamp?: number }) => {
+      console.log('🔥 Socket Price Update:', data);
+
+      // Only update if symbol matches
+      if (data.pair === currentSymbol) {
         updatePrice(data.price);
+
+        const time = data.timestamp || Date.now();
+        const currentMinute = Math.floor(time / 60000) * 60000;
+
+        setCandleData((prev) => {
+          if (prev.length === 0) {
+            lastCandleTimeRef.current = currentMinute;
+            return [{
+              time: currentMinute,
+              open: data.price,
+              high: data.price,
+              low: data.price,
+              close: data.price,
+            }];
+          }
+
+          const newData = [...prev];
+          const lastCandleIndex = newData.length - 1;
+          const lastCandle = newData[lastCandleIndex];
+
+          if (currentMinute > lastCandleTimeRef.current) {
+            lastCandleTimeRef.current = currentMinute;
+            newData.push({
+              time: currentMinute,
+              open: data.price,
+              high: data.price,
+              low: data.price,
+              close: data.price,
+            });
+            if (newData.length > 200) {
+              newData.shift();
+            }
+          } else {
+            const updatedCandle = { ...lastCandle };
+            updatedCandle.close = data.price;
+            updatedCandle.high = Math.max(updatedCandle.high, data.price);
+            updatedCandle.low = Math.min(updatedCandle.low, data.price);
+            updatedCandle.time = currentMinute;
+            newData[lastCandleIndex] = updatedCandle;
+          }
+
+          return newData;
+        });
       }
     };
 
@@ -37,19 +112,27 @@ export const TradingPage: React.FC = () => {
     return () => {
       socketService.offPriceUpdate(handlePriceUpdate);
     };
-  }, [updatePrice, selectedPair]);
+  }, [updatePrice, currentSymbol]);
 
   React.useEffect(() => {
     fetchPairs();
   }, [fetchPairs]);
 
   React.useEffect(() => {
-    if (isConnected) {
+    if (isAuthenticated) {
       fetchMyTrades();
       const interval = setInterval(fetchMyTrades, 10000);
       return () => clearInterval(interval);
     }
-  }, [isConnected, fetchMyTrades]);
+  }, [isAuthenticated, fetchMyTrades]);
+
+  const activeOrders = openOrders.map((order) => ({
+    id: order.id,
+    entryPrice: order.entryPrice,
+    direction: order.direction as 'UP' | 'DOWN',
+    timeframe: order.timeframe || timeframe || 60,
+    placedAt: order.createdAt ? new Date(order.createdAt).getTime() : Date.now(),
+  }));
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -59,8 +142,19 @@ export const TradingPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-card border border-border rounded-2xl p-6 h-[500px]">
-            <PriceChart data={priceHistory} currentPrice={currentPrice} />
+          <div className="bg-card border border-border rounded-2xl p-6 h-[550px]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold">{currentSymbol}</h2>
+              </div>
+            </div>
+            <div className="h-[calc(100%-60px)]">
+              <CandlestickChart
+                data={candleData}
+                currentPrice={currentPrice}
+                activeOrders={activeOrders}
+              />
+            </div>
           </div>
         </div>
 
@@ -98,4 +192,3 @@ export const TradingPage: React.FC = () => {
     </div>
   );
 };
-

@@ -17,6 +17,8 @@ export interface Trade {
   openTime: string;
   expireTime: string;
   status: OrderStatus;
+  timeframe?: number;
+  createdAt?: string;
   result?: { result: 'WIN' | 'LOSE'; profit: number; settlePrice: number };
 }
 
@@ -45,6 +47,7 @@ interface TradingState {
   placeTrade: (direction: OrderDirection) => Promise<void>;
   fetchMyTrades: () => Promise<void>;
   updatePrice: (price: number) => void;
+  fetchCandles: (symbol: string) => Promise<any[]>;
 }
 
 export const useTradingStore = create<TradingState>((set, get) => ({
@@ -60,9 +63,11 @@ export const useTradingStore = create<TradingState>((set, get) => ({
 
   fetchPairs: async () => {
     try {
-      const pairs = await api.get<TradingPair[]>('/admin/pairs');
+      const pairs = await api.get<TradingPair[]>('/trading-pairs');
       const activePairs = pairs.filter((p) => p.isActive);
-      set({ pairs: activePairs, selectedPair: activePairs[0] || null });
+      // Prioritize BTC/USD to match Oracle broadcast symbol
+      const btcPair = activePairs.find((p) => p.symbol === 'BTC/USD');
+      set({ pairs: activePairs, selectedPair: btcPair || activePairs[0] || null });
     } catch (e) {
       console.error('Failed to fetch pairs', e);
     }
@@ -114,5 +119,16 @@ export const useTradingStore = create<TradingState>((set, get) => ({
       currentPrice: price,
       priceHistory: [...state.priceHistory.slice(-100), { time: Date.now(), price }],
     }));
+  },
+
+  fetchCandles: async (symbol: string) => {
+    try {
+      // Use public api directly
+      const data = await api.get<any[]>(`/trading-pairs/candles?symbol=${encodeURIComponent(symbol)}&limit=200`);
+      return data;
+    } catch (e) {
+      console.error('Failed to fetch candles', e);
+      return [];
+    }
   },
 }));

@@ -16,14 +16,13 @@ export class TradingGateway implements OnGatewayConnection, OnGatewayDisconnect,
     @WebSocketServer()
     server: Server;
 
-    private priceInterval: NodeJS.Timeout;
     private readonly PRICE_PAIRS = ['BTC/USD', 'ETH/USD', 'BNB/USD'];
 
     constructor(private oracleService: OracleService) { }
 
-    afterInit() {
-        // Start price broadcast when gateway initializes
-        this.startPriceBroadcast();
+    async afterInit() {
+        console.log('TradingGateway initialized');
+        this.subscribeToOraclePrices();
     }
 
     handleConnection(client: Socket) {
@@ -68,25 +67,15 @@ export class TradingGateway implements OnGatewayConnection, OnGatewayDisconnect,
         this.server.emit('trade:settled', event);
     }
 
-    async broadcastPrice(pair: string, price: number) {
+    private subscribeToOraclePrices() {
+        this.oracleService.priceUpdates$.subscribe((update) => {
+            this.broadcastPrice(update.symbol, update.price);
+        });
+    }
+
+    broadcastPrice(pair: string, price: number) {
         this.server.to(`price:${pair}`).emit('price:update', { pair, price, timestamp: Date.now() });
         // Also broadcast to all connected clients
         this.server.emit('price:update', { pair, price, timestamp: Date.now() });
-    }
-
-    startPriceBroadcast() {
-        console.log('Starting price broadcast...');
-        this.priceInterval = setInterval(async () => {
-            for (const pair of this.PRICE_PAIRS) {
-                const price = await this.oracleService.getPrice(pair);
-                this.broadcastPrice(pair, price);
-            }
-        }, 1000);
-    }
-
-    stopPriceBroadcast() {
-        if (this.priceInterval) {
-            clearInterval(this.priceInterval);
-        }
     }
 }

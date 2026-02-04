@@ -65,13 +65,16 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
       const address = accounts[0];
 
-      const message = 'Login to BO Copytrade';
-      const signature = (await window.ethereum.request({
-        method: 'personal_sign',
-        params: [message, address],
-      })) as string;
+      // TODO: Wallet-based auth is disabled. Using email auth instead.
+      // If wallet login is needed, add loginWithWallet method to auth-store
+      // const message = 'Login to BO Copytrade';
+      // const signature = (await window.ethereum.request({
+      //   method: 'personal_sign',
+      //   params: [message, address],
+      // })) as string;
+      // await useAuthStore.getState().loginWithWallet(address, signature);
 
-      await useAuthStore.getState().login(address, signature);
+      console.log('Wallet connected:', address);
 
       set({
         isConnected: true,

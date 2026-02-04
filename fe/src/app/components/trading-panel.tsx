@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUp, ArrowDown, Clock } from 'lucide-react';
 import { useTradingStore } from '@/stores/trading-store';
-import { useWalletStore } from '@/stores/wallet-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -9,7 +9,7 @@ import { formatCurrency, formatPercent } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export const TradingPanel: React.FC = () => {
-  const { isConnected } = useWalletStore();
+  const { isAuthenticated } = useAuthStore();
   const {
     selectedPair,
     pairs,
@@ -38,16 +38,20 @@ export const TradingPanel: React.FC = () => {
   const estimatedProfit = amount * payout;
 
   const handleTrade = async (direction: 'UP' | 'DOWN') => {
-    if (!isConnected) {
-      toast.error('Vui lòng kết nối ví trước');
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập trước');
       return;
     }
     if (amount < 1) {
       toast.error('Số tiền tối thiểu là 1 USDT');
       return;
     }
-    await placeTrade(direction);
-    toast.success(`Đã đặt lệnh ${direction === 'UP' ? 'TĂNG' : 'GIẢM'} thành công!`);
+    try {
+      await placeTrade(direction);
+      toast.success(`Đã đặt lệnh ${direction === 'UP' ? 'TĂNG' : 'GIẢM'} thành công!`);
+    } catch (error) {
+      toast.error('Đặt lệnh thất bại. Vui lòng thử lại.');
+    }
   };
 
   return (
@@ -82,8 +86,8 @@ export const TradingPanel: React.FC = () => {
                 key={tf.value}
                 onClick={() => setTimeframe(tf.value)}
                 className={`px-3 py-2 rounded-md text-sm transition-colors ${timeframe === tf.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                   }`}
               >
                 <Clock className="h-3 w-3 inline mr-1" />
@@ -136,7 +140,7 @@ export const TradingPanel: React.FC = () => {
             variant="up"
             size="lg"
             onClick={() => handleTrade('UP')}
-            disabled={!isConnected || !selectedPair}
+            disabled={!isAuthenticated || !selectedPair}
             className="gap-2"
           >
             <ArrowUp className="h-5 w-5" />
@@ -146,7 +150,7 @@ export const TradingPanel: React.FC = () => {
             variant="down"
             size="lg"
             onClick={() => handleTrade('DOWN')}
-            disabled={!isConnected || !selectedPair}
+            disabled={!isAuthenticated || !selectedPair}
             className="gap-2"
           >
             <ArrowDown className="h-5 w-5" />
@@ -154,9 +158,9 @@ export const TradingPanel: React.FC = () => {
           </Button>
         </div>
 
-        {!isConnected && (
+        {!isAuthenticated && (
           <p className="text-sm text-center text-muted-foreground">
-            Kết nối ví để bắt đầu giao dịch
+            Đăng nhập để bắt đầu giao dịch
           </p>
         )}
       </CardContent>

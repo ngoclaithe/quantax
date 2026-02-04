@@ -1,18 +1,20 @@
 import React from 'react';
-import { TrendingUp, Users, Copy, Trophy, ArrowRight, Zap, Shield, Globe, ChevronRight, Star, Clock, Wallet, BarChart3, Sparkles } from 'lucide-react';
+import { TrendingUp, Users, Copy, Trophy, ArrowRight, Zap, Shield, Globe, ChevronRight, Star, Clock, User, BarChart3, Sparkles } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Card, CardContent } from '@/app/components/ui/card';
 import { QuickStartGuide } from '@/app/components/quick-start-guide';
 import { StatsTicker } from '@/app/components/stats-ticker';
+import { AuthDrawer } from '@/app/components/auth-drawer';
 import { formatCurrency, formatNumber } from '@/lib/utils';
-import { useWalletStore } from '@/stores/wallet-store';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface HomePageProps {
   onNavigate: (page: string) => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
-  const { isConnected, connectWallet } = useWalletStore();
+  const { isAuthenticated } = useAuthStore();
+  const [showAuthDrawer, setShowAuthDrawer] = React.useState(false);
 
   const stats = [
     { label: 'Khối lượng 24h', value: formatCurrency(15420350.75), icon: TrendingUp, color: 'from-indigo-500 to-purple-600' },
@@ -25,7 +27,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     {
       title: 'Giao dịch siêu tốc',
       description: 'Đặt lệnh trong vài giây với khung thời gian từ 1-15 phút. Giao diện tối ưu cho trải nghiệm mượt mà.',
-      image: '/images/feature_fast_trading.png',
+      image: '/images/feature_fast_trading.webp',
       gradient: 'from-amber-500/20 to-orange-600/20',
       iconBg: 'from-amber-500 to-orange-600',
       icon: Zap,
@@ -33,7 +35,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     {
       title: 'Copy Trade thông minh',
       description: 'Sao chép giao dịch từ top trader với tỷ lệ thắng cao. Kiếm lợi nhuận tự động 24/7.',
-      image: '/images/feature_copy_trade.png',
+      image: '/images/feature_copy_trade.webp',
       gradient: 'from-purple-500/20 to-pink-600/20',
       iconBg: 'from-purple-500 to-pink-600',
       icon: Copy,
@@ -41,7 +43,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     {
       title: 'An toàn & Minh bạch',
       description: 'Thanh toán on-chain, Oracle đáng tin cậy. Mọi giao dịch được ghi lại trên blockchain.',
-      image: '/images/feature_security.png',
+      image: '/images/feature_security.webp',
       gradient: 'from-cyan-500/20 to-blue-600/20',
       iconBg: 'from-cyan-500 to-blue-600',
       icon: Shield,
@@ -93,10 +95,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               </p>
 
               <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mb-8">
-                {!isConnected ? (
-                  <Button size="lg" onClick={connectWallet} className="gap-2 px-8 py-6 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all">
-                    <Wallet className="h-5 w-5" />
-                    Kết nối ví để bắt đầu
+                {!isAuthenticated ? (
+                  <Button size="lg" onClick={() => setShowAuthDrawer(true)} className="gap-2 px-8 py-6 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all">
+                    <User className="h-5 w-5" />
+                    Đăng nhập để bắt đầu
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 ) : (
@@ -131,12 +133,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             {/* Right Content - Hero Image */}
             <div className="relative hidden lg:block">
               <div className="relative z-10">
-                <img
-                  src="/images/hero_trading_dashboard.png"
-                  alt="Trading Dashboard"
-                  className="w-full h-auto rounded-2xl shadow-2xl shadow-primary/20 hover:scale-105 transition-transform duration-500"
-                />
-                {/* Floating Elements */}
+                <div className="relative w-full aspect-video overflow-hidden rounded-2xl shadow-2xl shadow-primary/20">
+                  <img
+                    src="/images/hero_trading_dashboard.webp"
+                    alt="Trading Dashboard"
+                    width={600}
+                    height={400}
+                    loading="eager"
+                    decoding="async"
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
                 <div className="absolute -top-4 -left-4 p-4 rounded-xl bg-card/80 backdrop-blur-xl border shadow-xl animate-float">
                   <div className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-success to-emerald-600 flex items-center justify-center">
@@ -266,8 +273,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               <Card key={i} className="hover:scale-105 transition-all duration-300 overflow-hidden group">
                 <div className="absolute top-0 right-0 p-2">
                   <div className={`px-3 py-1 rounded-full text-xs font-bold ${i === 0 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black' :
-                      i === 1 ? 'bg-gradient-to-r from-slate-400 to-slate-300 text-black' :
-                        'bg-gradient-to-r from-amber-700 to-amber-600 text-white'
+                    i === 1 ? 'bg-gradient-to-r from-slate-400 to-slate-300 text-black' :
+                      'bg-gradient-to-r from-amber-700 to-amber-600 text-white'
                     }`}>
                     #{i + 1}
                   </div>
@@ -275,8 +282,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className={`h-16 w-16 rounded-full bg-gradient-to-br ${i === 0 ? 'from-amber-500 to-yellow-500' :
-                        i === 1 ? 'from-slate-400 to-slate-500' :
-                          'from-amber-700 to-amber-800'
+                      i === 1 ? 'from-slate-400 to-slate-500' :
+                        'from-amber-700 to-amber-800'
                       } flex items-center justify-center text-2xl font-bold text-white shadow-lg`}>
                       {trader.name.charAt(0)}
                     </div>
@@ -389,10 +396,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             Tham gia cùng hàng nghìn trader đang kiếm lợi nhuận mỗi ngày trên Quantax
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            {!isConnected ? (
-              <Button size="lg" onClick={connectWallet} className="gap-2 px-8 py-6 text-lg bg-gradient-to-r from-primary to-purple-600 shadow-lg shadow-primary/30">
-                <Wallet className="h-5 w-5" />
-                Kết nối ví ngay
+            {!isAuthenticated ? (
+              <Button size="lg" onClick={() => setShowAuthDrawer(true)} className="gap-2 px-8 py-6 text-lg bg-gradient-to-r from-primary to-purple-600 shadow-lg shadow-primary/30">
+                <User className="h-5 w-5" />
+                Đăng nhập ngay
                 <ArrowRight className="h-5 w-5" />
               </Button>
             ) : (
@@ -445,6 +452,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           animation: gradient 3s ease infinite;
         }
       `}</style>
+
+      {/* Auth Drawer */}
+      <AuthDrawer
+        isOpen={showAuthDrawer}
+        onClose={() => setShowAuthDrawer(false)}
+      />
     </div>
   );
 };

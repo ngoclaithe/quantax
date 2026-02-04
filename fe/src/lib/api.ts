@@ -31,6 +31,22 @@ export const api = {
         return res.json();
     },
 
+    async put<T>(endpoint: string, data: unknown, token?: string): Promise<T> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(`${API_URL}${endpoint}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+    },
+
     async patch<T>(endpoint: string, data: unknown, token?: string): Promise<T> {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',

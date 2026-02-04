@@ -1,35 +1,41 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Toaster } from 'sonner';
 import { Header } from './components/header';
 import { Footer } from './components/footer';
-import { FeatureTour } from './components/feature-tour';
-
-// User Pages
-import { HomePage } from './pages/home-page';
-import { TradingPage } from './pages/trading-page';
-import { CopyTradePage } from './pages/copy-trade-page';
-import { LeaderboardPage } from './pages/leaderboard-page';
-import { PortfolioPage } from './pages/portfolio-page';
-import { ProfilePage } from './pages/profile-page';
-import { SettingsPage } from './pages/settings-page';
-
-// Admin Pages
-import { AdminLoginPage } from './pages/admin/login-page';
-import { AdminLayout } from './pages/admin/admin-layout';
-import { AdminDashboardPage } from './pages/admin/dashboard-page';
-import { TradesMonitoringPage } from './pages/admin/trades-monitoring-page';
-import { PairsConfigPage } from './pages/admin/pairs-config-page';
-import { TradersPage } from './pages/admin/traders-page';
-import { AnalyticsPage } from './pages/admin/analytics-page';
-import { SystemSettingsPage } from './pages/admin/system-settings-page';
-import { LogsAuditPage } from './pages/admin/logs-audit-page';
-import { RiskManagementPage } from './pages/admin/risk-management-page';
-import { PriceManipulationPage } from './pages/admin/price-manipulation-page';
-
 import { useAdminStore } from '@/stores/admin-store';
+
+// Lazy load all pages for code splitting
+const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
+const TradingPage = lazy(() => import('./pages/trading-page').then(m => ({ default: m.TradingPage })));
+const CopyTradePage = lazy(() => import('./pages/copy-trade-page').then(m => ({ default: m.CopyTradePage })));
+const LeaderboardPage = lazy(() => import('./pages/leaderboard-page').then(m => ({ default: m.LeaderboardPage })));
+const PortfolioPage = lazy(() => import('./pages/portfolio-page').then(m => ({ default: m.PortfolioPage })));
+const ProfilePage = lazy(() => import('./pages/profile-page').then(m => ({ default: m.ProfilePage })));
+const SettingsPage = lazy(() => import('./pages/settings-page').then(m => ({ default: m.SettingsPage })));
+const FeatureTour = lazy(() => import('./components/feature-tour').then(m => ({ default: m.FeatureTour })));
+
+// Admin Pages - lazy loaded
+const AdminLoginPage = lazy(() => import('./pages/admin/login-page').then(m => ({ default: m.AdminLoginPage })));
+const AdminLayout = lazy(() => import('./pages/admin/admin-layout').then(m => ({ default: m.AdminLayout })));
+const AdminDashboardPage = lazy(() => import('./pages/admin/dashboard-page').then(m => ({ default: m.AdminDashboardPage })));
+const TradesMonitoringPage = lazy(() => import('./pages/admin/trades-monitoring-page').then(m => ({ default: m.TradesMonitoringPage })));
+const PairsConfigPage = lazy(() => import('./pages/admin/pairs-config-page').then(m => ({ default: m.PairsConfigPage })));
+const TradersPage = lazy(() => import('./pages/admin/traders-page').then(m => ({ default: m.TradersPage })));
+const AnalyticsPage = lazy(() => import('./pages/admin/analytics-page').then(m => ({ default: m.AnalyticsPage })));
+const SystemSettingsPage = lazy(() => import('./pages/admin/system-settings-page').then(m => ({ default: m.SystemSettingsPage })));
+const LogsAuditPage = lazy(() => import('./pages/admin/logs-audit-page').then(m => ({ default: m.LogsAuditPage })));
+const RiskManagementPage = lazy(() => import('./pages/admin/risk-management-page').then(m => ({ default: m.RiskManagementPage })));
+const PriceManipulationPage = lazy(() => import('./pages/admin/price-manipulation-page').then(m => ({ default: m.PriceManipulationPage })));
 
 // Secret admin route - only you know this
 const ADMIN_SECRET_ROUTE = 'quantax-admin-2024';
+
+// Loading spinner component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[50vh]">
+    <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+  </div>
+);
 
 export type AppPage =
   | 'home'
@@ -82,10 +88,10 @@ function App() {
   // Admin Login Page
   if (isAdminLogin) {
     return (
-      <>
+      <Suspense fallback={<PageLoader />}>
         <AdminLoginPage onLoginSuccess={() => setCurrentPage('admin-dashboard')} />
         <Toaster position="top-right" richColors />
-      </>
+      </Suspense>
     );
   }
 
@@ -97,7 +103,7 @@ function App() {
     }
 
     return (
-      <>
+      <Suspense fallback={<PageLoader />}>
         <AdminLayout currentPage={currentPage} onNavigate={handleNavigate}>
           {currentPage === 'admin-dashboard' && <AdminDashboardPage />}
           {currentPage === 'admin-trades' && <TradesMonitoringPage />}
@@ -110,7 +116,7 @@ function App() {
           {currentPage === 'admin-prices' && <PriceManipulationPage />}
         </AdminLayout>
         <Toaster position="top-right" richColors />
-      </>
+      </Suspense>
     );
   }
 
@@ -124,19 +130,23 @@ function App() {
       />
 
       <main>
-        {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
-        {currentPage === 'trading' && <TradingPage />}
-        {currentPage === 'copy-trade' && <CopyTradePage />}
-        {currentPage === 'leaderboard' && <LeaderboardPage />}
-        {currentPage === 'portfolio' && <PortfolioPage />}
-        {currentPage === 'profile' && <ProfilePage />}
-        {currentPage === 'settings' && <SettingsPage />}
+        <Suspense fallback={<PageLoader />}>
+          {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
+          {currentPage === 'trading' && <TradingPage />}
+          {currentPage === 'copy-trade' && <CopyTradePage />}
+          {currentPage === 'leaderboard' && <LeaderboardPage />}
+          {currentPage === 'portfolio' && <PortfolioPage />}
+          {currentPage === 'profile' && <ProfilePage />}
+          {currentPage === 'settings' && <SettingsPage />}
+        </Suspense>
       </main>
 
       <Footer />
 
-      {/* Feature Tour */}
-      <FeatureTour onNavigate={handleNavigate} />
+      {/* Feature Tour - lazy loaded */}
+      <Suspense fallback={null}>
+        <FeatureTour onNavigate={handleNavigate} />
+      </Suspense>
 
       <Toaster position="top-right" richColors />
     </div>

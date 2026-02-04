@@ -40,6 +40,32 @@ async function main() {
     console.log('  Email:', adminEmail);
     console.log('  Password:', adminPassword);
 
+    // Seed demo user
+    const demoEmail = 'demo@quantax.io';
+    const demoPassword = 'demo123';
+    const demoHash = await bcrypt.hash(demoPassword, 10);
+
+    const existingUser = await prisma.user.findUnique({ where: { email: demoEmail } });
+    if (!existingUser) {
+        await prisma.user.create({
+            data: {
+                email: demoEmail,
+                passwordHash: demoHash,
+                nickname: 'DemoTrader',
+                role: 'USER',
+                wallet: {
+                    create: {
+                        balance: 1000,
+                        lockedBalance: 0,
+                    },
+                },
+            },
+        });
+        console.log('Demo user created');
+        console.log('  Email:', demoEmail);
+        console.log('  Password:', demoPassword);
+    }
+
     console.log('\\nSeed completed successfully!');
 }
 
@@ -51,3 +77,4 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
+

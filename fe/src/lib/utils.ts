@@ -16,8 +16,9 @@ export function formatCurrency(num: number, currency: string = 'USDT'): string {
   return `${formatNumber(num)} ${currency}`;
 }
 
-export function formatAddress(address: string): string {
-  if (!address) return '';
+export function formatAddress(address: string | null | undefined): string {
+  if (!address) return 'N/A';
+  if (address.length <= 10) return address;
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
