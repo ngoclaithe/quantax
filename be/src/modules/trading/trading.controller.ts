@@ -10,11 +10,11 @@ export class TradingController {
     @Post()
     async createTrade(
         @Request() req: { user: { userId: string } },
-        @Body() body: { pair: string; direction: 'UP' | 'DOWN'; amount: number; timeframe: number },
+        @Body() body: { pairId: string; direction: 'UP' | 'DOWN'; amount: number; timeframe: number },
     ) {
         return this.tradeCommandService.createOrder(
             req.user.userId,
-            body.pair,
+            body.pairId,
             body.direction,
             body.amount,
             body.timeframe,

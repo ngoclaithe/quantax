@@ -1,9 +1,9 @@
 import React from 'react';
-import { ExternalLink, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Trade } from '@/stores/trading-store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { formatCurrency, formatAddress, formatTime } from '@/lib/utils';
+import { formatCurrency, formatTime } from '@/lib/utils';
 
 interface OrderListProps {
   orders: Trade[];
@@ -100,11 +100,7 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, title, type }) => 
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground pt-2">
-                    <span>ID:</span>
-                    <span>{formatAddress(order.id)}</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </div>
+                  {/* ID Removed */}
                 </div>
               );
             })}

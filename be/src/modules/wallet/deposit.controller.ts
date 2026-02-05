@@ -7,7 +7,6 @@ import { PrismaService } from '../../infrastructure/database/prisma.service';
 export class DepositController {
     constructor(private prisma: PrismaService) { }
 
-    // Get active banks for deposit
     @Get('banks')
     async getActiveBanks() {
         return this.prisma.bankAccount.findMany({
@@ -15,13 +14,11 @@ export class DepositController {
         });
     }
 
-    // Create deposit order
     @Post('deposit')
     async createDeposit(@Request() req: any, @Body() body: { amount: number; bankId: string }) {
         const userId = req.user.userId;
         const codePay = this.generateCodePay();
 
-        // Expiration 15 mins
         const expiredAt = new Date();
         expiredAt.setMinutes(expiredAt.getMinutes() + 15);
 
@@ -42,7 +39,6 @@ export class DepositController {
         return deposit;
     }
 
-    // Get user deposits
     @Get('deposits')
     async getMyDeposits(@Request() req: any) {
         return this.prisma.depositOrder.findMany({
@@ -53,7 +49,6 @@ export class DepositController {
     }
 
     private generateCodePay(): string {
-        // Generate 6 random alphanumeric characters
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let result = '';
         for (let i = 0; i < 6; i++) {

@@ -4,7 +4,6 @@ import { useAuthStore } from '@/stores/auth-store';
 import { CandlestickChart } from '@/app/components/candlestick-chart';
 import { TradingPanel } from '@/app/components/trading-panel';
 import { OrderList } from '@/app/components/order-list';
-import { WalletConnectPrompt } from '@/app/components/wallet-connect-prompt';
 import { socketService } from '@/lib/socket';
 import * as Tabs from '@radix-ui/react-tabs';
 
@@ -80,25 +79,35 @@ export const TradingPage: React.FC = () => {
           const newData = [...prev];
           const lastCandleIndex = newData.length - 1;
           const lastCandle = newData[lastCandleIndex];
+          const incomingPrice = Number(data.price); // Ensure number
 
           if (currentMinute > lastCandleTimeRef.current) {
+            // New candle
+            console.log('🕯️ OLD Candle CLOSED:', lastCandle);
+            console.log('🕯️ NEW Candle STARTED:', { time: currentMinute, price: incomingPrice });
+
             lastCandleTimeRef.current = currentMinute;
             newData.push({
               time: currentMinute,
-              open: data.price,
-              high: data.price,
-              low: data.price,
-              close: data.price,
+              open: incomingPrice, // Or lastCandle.close
+              high: incomingPrice,
+              low: incomingPrice,
+              close: incomingPrice,
             });
             if (newData.length > 200) {
               newData.shift();
             }
           } else {
+            // Update current candle - IMMUTABLE
             const updatedCandle = { ...lastCandle };
-            updatedCandle.close = data.price;
-            updatedCandle.high = Math.max(updatedCandle.high, data.price);
-            updatedCandle.low = Math.min(updatedCandle.low, data.price);
+            updatedCandle.close = incomingPrice;
+            updatedCandle.high = Math.max(Number(updatedCandle.high), incomingPrice);
+            updatedCandle.low = Math.min(Number(updatedCandle.low), incomingPrice);
             updatedCandle.time = currentMinute;
+
+            // Console log to debug "flat candle" issue
+            // console.log(`📊 Update Candle: O:${updatedCandle.open} H:${updatedCandle.high} L:${updatedCandle.low} C:${updatedCandle.close}`);
+
             newData[lastCandleIndex] = updatedCandle;
           }
 
@@ -136,9 +145,6 @@ export const TradingPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <WalletConnectPrompt />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
