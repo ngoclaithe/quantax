@@ -1,6 +1,7 @@
 import React from 'react';
 import { User, Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
+import { useWalletStore } from '@/stores/wallet-store';
 import { Button } from './ui/button';
 import { AuthDrawer } from './auth-drawer';
 import { formatCurrency } from '@/lib/utils';
@@ -13,7 +14,14 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin = false }) => {
   const { isAuthenticated, user, logout, isLoading } = useAuthStore();
+  const { balance, fetchWallet } = useWalletStore();
   const [showMenu, setShowMenu] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      fetchWallet();
+    }
+  }, [isAuthenticated, fetchWallet]);
   const [showAuthDrawer, setShowAuthDrawer] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
 
@@ -84,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
                             {user.nickname || user.email.split('@')[0]}
                           </div>
                           <div className="text-xs text-primary">
-                            {formatCurrency(user.balance || 1000)}
+                            {formatCurrency(balance)}
                           </div>
                         </div>
                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold">

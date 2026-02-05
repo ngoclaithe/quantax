@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api';
 import { useAuthStore } from './auth-store';
+import { useWalletStore } from './wallet-store';
 
 export type OrderStatus = 'PENDING' | 'LOCKED' | 'SETTLED';
 export type OrderResult = 'WIN' | 'LOSE' | null;
@@ -95,6 +96,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
         token
       );
       await get().fetchMyTrades();
+      // Fetch wallet to update balance (locked amount)
+      await useWalletStore.getState().fetchWallet();
     } finally {
       set({ isLoading: false });
     }
@@ -109,6 +112,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
         openOrders: trades.filter((t) => t.status !== 'SETTLED'),
         closedOrders: trades.filter((t) => t.status === 'SETTLED'),
       });
+      // Also update wallet balance as trades might have settled
+      await useWalletStore.getState().fetchWallet();
     } catch (e) {
       console.error('Failed to fetch trades', e);
     }

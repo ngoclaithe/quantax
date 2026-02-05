@@ -90,7 +90,7 @@ function App() {
     return (
       <Suspense fallback={<PageLoader />}>
         <AdminLoginPage onLoginSuccess={() => setCurrentPage('admin-dashboard')} />
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors duration={2000} />
       </Suspense>
     );
   }
@@ -115,7 +115,7 @@ function App() {
           {currentPage === 'admin-logs' && <LogsAuditPage />}
           {currentPage === 'admin-prices' && <PriceManipulationPage />}
         </AdminLayout>
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors duration={2000} />
       </Suspense>
     );
   }
@@ -148,7 +148,7 @@ function App() {
         <FeatureTour onNavigate={handleNavigate} />
       </Suspense>
 
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors duration={2000} />
     </div>
   );
 }

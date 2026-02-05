@@ -37,7 +37,7 @@ export const AuthDrawer: React.FC<AuthDrawerProps> = ({ isOpen, onClose }) => {
         try {
             if (mode === 'login') {
                 await loginWithEmail(email, password);
-                toast.success('Đăng nhập thành công!');
+                // toast.success('Đăng nhập thành công!');
                 onClose();
                 resetForm();
             } else {
@@ -207,8 +207,8 @@ export const AuthDrawer: React.FC<AuthDrawerProps> = ({ isOpen, onClose }) => {
                         <Button
                             type="submit"
                             className={`w-full h-14 gap-3 text-lg font-semibold rounded-xl shadow-lg transition-all ${mode === 'login'
-                                    ? 'bg-gradient-to-r from-primary to-purple-600 hover:shadow-primary/30'
-                                    : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-emerald-500/30'
+                                ? 'bg-gradient-to-r from-primary to-purple-600 hover:shadow-primary/30'
+                                : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-emerald-500/30'
                                 }`}
                             disabled={isLoading}
                         >
