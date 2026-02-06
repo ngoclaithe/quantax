@@ -38,21 +38,21 @@ interface BinanceKline {
 export class OracleService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(OracleService.name);
     private ws: WebSocket;
-    private readonly BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/btcusdt@kline_1m';
+    private readonly BINANCE_WS_URL = 'wss://stream.binance.com:9443/stream?streams=btcusdt@kline_1m/ethusdt@kline_1m/bnbusdt@kline_1m/solusdt@kline_1m/xrpusdt@kline_1m';
     public priceUpdates$ = new Subject<PriceUpdate>();
 
-    // Memory cache for current candle state
-    private currentCandle = {
-        symbol: 'BTCUSDT',
-        open: 0,
-        high: 0,
-        low: 0,
-        close: 0,
-        startTime: 0,
-    };
+    // Memory cache for current candles (symbol -> candle)
+    private currentCandles = new Map<string, {
+        symbol: string;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        startTime: number;
+    }>();
 
-    // Admin manipulation target (optional)
-    private targetClosePrice: number | null = null;
+    // Admin manipulation targets (symbol -> price)
+    private targetClosePrices = new Map<string, number>();
 
     constructor(private prisma: PrismaService) { }
 
@@ -70,14 +70,15 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
         this.ws = new WebSocket(this.BINANCE_WS_URL);
 
         this.ws.on('open', () => {
-            this.logger.log('Connected to Binance WebSocket');
+            this.logger.log('Connected to Binance WebSocket (Combined Streams)');
         });
 
         this.ws.on('message', (data: string) => {
             try {
-                const message: BinanceKline = JSON.parse(data.toString());
-                if (message.e === 'kline') {
-                    this.handleKlineMessage(message);
+                const message = JSON.parse(data.toString());
+                // Combined stream format: { stream: "...", data: { ... } }
+                if (message.data && message.data.e === 'kline') {
+                    this.handleKlineMessage(message.data);
                 }
             } catch (error) {
                 this.logger.error('Error parsing Binance message', error);
@@ -94,21 +95,26 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
         });
     }
 
+    private normalizeSymbol(binanceSymbol: string): string {
+        // BTCUSDT -> BTC/USD
+        const base = binanceSymbol.replace('USDT', '');
+        return `${base}/USD`;
+    }
+
     private async handleKlineMessage(kline: BinanceKline) {
-        const symbol = 'BTC/USD'; // Map BTCUSDT to system symbol
+        const symbol = this.normalizeSymbol(kline.s);
         const binancePrice = parseFloat(kline.k.c);
         let finalPrice = binancePrice;
 
         // --- MANIPULATION LOGIC START ---
-        // If there is a target close price set by admin
-        if (this.targetClosePrice !== null) {
+        const targetPrice = this.targetClosePrices.get(symbol);
+        if (targetPrice !== undefined) {
             const now = Date.now();
             const endTime = kline.k.T;
             const timeLeft = endTime - now;
 
-            // Simple linear interpolation to target if near end of candle
-            if (timeLeft > 0 && timeLeft < 30000) { // Last 30 seconds
-                const currentDiff = this.targetClosePrice - binancePrice;
+            if (timeLeft > 0 && timeLeft < 30000) {
+                const currentDiff = targetPrice - binancePrice;
                 const adjustment = currentDiff * (1 - timeLeft / 30000);
                 finalPrice = binancePrice + adjustment;
             }
@@ -116,9 +122,10 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
         // --- MANIPULATION LOGIC END ---
 
         // Update current candle state
-        if (this.currentCandle.startTime !== kline.k.t) {
-            // New candle started, Reset
-            this.currentCandle = {
+        let candle = this.currentCandles.get(symbol);
+        if (!candle || candle.startTime !== kline.k.t) {
+            // New candle or first time
+            candle = {
                 symbol,
                 open: finalPrice,
                 high: finalPrice,
@@ -126,11 +133,13 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
                 close: finalPrice,
                 startTime: kline.k.t,
             };
+            this.currentCandles.set(symbol, candle);
         } else {
-            // Update existing candle
-            this.currentCandle.close = finalPrice;
-            this.currentCandle.high = Math.max(this.currentCandle.high, finalPrice);
-            this.currentCandle.low = Math.min(this.currentCandle.low, finalPrice);
+            // Update existing
+            candle.close = finalPrice;
+            candle.high = Math.max(candle.high, finalPrice);
+            candle.low = Math.min(candle.low, finalPrice);
+            this.currentCandles.set(symbol, candle);
         }
 
         // 1. Broadcast real-time price
@@ -140,24 +149,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
             timestamp: Date.now(),
         });
 
-        // 2. Save tick log (every second roughly, as binance pushes updates frequently)
-        // Optimization: Debounce or save only on significant change could be added here
-        // For now, save every tick for accuracy request
-        // Wrap in try-catch to avoid crashing on DB error
-        try {
-            /* 
-            // Commenting out heavy write to prevent DB spam for now, enable if strictly needed
-            await this.prisma.priceTick.create({
-                data: {
-                    symbol,
-                    price: finalPrice,
-                    timestamp: new Date(),
-                }
-            });
-            */
-        } catch (e) {
-            console.error('Error saving tick', e);
-        }
+        // 2. Save tick (Optional/Skipped for perf logic remains)
 
         // 3. If candle closed, save to DB
         if (kline.k.x) {
@@ -166,17 +158,17 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
                     data: {
                         symbol,
                         time: new Date(kline.k.t),
-                        open: this.currentCandle.open,
-                        high: this.currentCandle.high,
-                        low: this.currentCandle.low,
-                        close: this.currentCandle.close,
-                        volume: parseFloat(kline.k.v), // Use Binance volume for now
+                        open: candle.open,
+                        high: candle.high,
+                        low: candle.low,
+                        close: candle.close,
+                        volume: parseFloat(kline.k.v),
                     },
                 });
-                this.logger.log(`Candle saved: ${symbol} ${new Date(kline.k.t).toISOString()}`);
+                // this.logger.log(`Candle saved: ${symbol} ${new Date(kline.k.t).toISOString()}`);
 
-                // Reset target price after candle close
-                this.targetClosePrice = null;
+                // Reset target
+                this.targetClosePrices.delete(symbol);
             } catch (e) {
                 this.logger.error('Error saving candle', e);
             }
@@ -184,13 +176,12 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Method for Admin to set target price
-    public setTargetPrice(price: number) {
-        this.targetClosePrice = price;
-        this.logger.log(`Target price set to: ${price}`);
+    public setTargetPrice(symbol: string, price: number) {
+        this.targetClosePrices.set(symbol, price);
+        this.logger.log(`Target price set for ${symbol}: ${price}`);
     }
 
     async getPrice(pair: string): Promise<number> {
-        // Fallback or current memory price
-        return this.currentCandle.close || 0;
+        return this.currentCandles.get(pair)?.close || 0;
     }
 }

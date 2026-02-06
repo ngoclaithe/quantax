@@ -48,6 +48,7 @@ model User {
   email         String?  @unique
   passwordHash  String?  @map("password_hash")
   nickname      String?
+  bio           String?
   avatarUrl     String?  @map("avatar_url")
   isPublic      Boolean  @default(true) @map("is_public")
   role          UserRole @default(USER)

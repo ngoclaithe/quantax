@@ -9,7 +9,7 @@ export type OrderDirection = 'UP' | 'DOWN';
 
 export interface Trade {
   id: string;
-  pair: { symbol: string };
+  pair?: { symbol: string };
   pairId: string;
   direction: OrderDirection;
   amount: number;
@@ -37,6 +37,7 @@ interface TradingState {
   amount: number;
   openOrders: Trade[];
   closedOrders: Trade[];
+  totalTrades: number;
   currentPrice: number;
   priceHistory: { time: number; price: number }[];
   isLoading: boolean;
@@ -46,7 +47,7 @@ interface TradingState {
   setTimeframe: (timeframe: number) => void;
   setAmount: (amount: number) => void;
   placeTrade: (direction: OrderDirection) => Promise<void>;
-  fetchMyTrades: () => Promise<void>;
+  fetchMyTrades: (offset?: number, limit?: number) => Promise<void>;
   updatePrice: (price: number) => void;
   fetchCandles: (symbol: string) => Promise<any[]>;
 }
@@ -58,6 +59,7 @@ export const useTradingStore = create<TradingState>((set, get) => ({
   amount: 10,
   openOrders: [],
   closedOrders: [],
+  totalTrades: 0,
   currentPrice: 43250.5,
   priceHistory: [],
   isLoading: false,
@@ -66,7 +68,6 @@ export const useTradingStore = create<TradingState>((set, get) => ({
     try {
       const pairs = await api.get<TradingPair[]>('/trading-pairs');
       const activePairs = pairs.filter((p) => p.isActive);
-      // Prioritize BTC/USD to match Oracle broadcast symbol
       const btcPair = activePairs.find((p) => p.symbol === 'BTC/USD');
       set({ pairs: activePairs, selectedPair: btcPair || activePairs[0] || null });
     } catch (e) {
@@ -80,8 +81,8 @@ export const useTradingStore = create<TradingState>((set, get) => ({
 
   placeTrade: async (direction) => {
     const state = get();
-    const token = useAuthStore.getState().token;
-    if (!state.selectedPair || !token) return;
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!state.selectedPair || !isAuthenticated) return;
 
     set({ isLoading: true });
     try {
@@ -92,27 +93,27 @@ export const useTradingStore = create<TradingState>((set, get) => ({
           direction,
           amount: state.amount,
           timeframe: state.timeframe,
-        },
-        token
+        }
       );
       await get().fetchMyTrades();
-      // Fetch wallet to update balance (locked amount)
       await useWalletStore.getState().fetchWallet();
     } finally {
       set({ isLoading: false });
     }
   },
 
-  fetchMyTrades: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
+  fetchMyTrades: async (offset = 0, limit = 20) => {
+    const { isAuthenticated } = useAuthStore.getState();
+    if (!isAuthenticated) return;
     try {
-      const trades = await api.get<Trade[]>('/trades/my', token);
+      const { trades, total } = await api.get<{ trades: Trade[]; total: number }>(
+        `/trades/my?offset=${offset}&limit=${limit}`
+      );
       set({
         openOrders: trades.filter((t) => t.status !== 'SETTLED'),
         closedOrders: trades.filter((t) => t.status === 'SETTLED'),
+        totalTrades: total,
       });
-      // Also update wallet balance as trades might have settled
       await useWalletStore.getState().fetchWallet();
     } catch (e) {
       console.error('Failed to fetch trades', e);
@@ -128,7 +129,6 @@ export const useTradingStore = create<TradingState>((set, get) => ({
 
   fetchCandles: async (symbol: string) => {
     try {
-      // Use public api directly
       const data = await api.get<any[]>(`/trading-pairs/candles?symbol=${encodeURIComponent(symbol)}&limit=200`);
       return data;
     } catch (e) {

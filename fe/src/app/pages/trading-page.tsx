@@ -124,8 +124,8 @@ export const TradingPage: React.FC = () => {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      fetchMyTrades();
-      const interval = setInterval(fetchMyTrades, 10000);
+      fetchMyTrades(0, 10);
+      const interval = setInterval(() => fetchMyTrades(0, 10), 10000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, fetchMyTrades]);
@@ -177,7 +177,7 @@ export const TradingPage: React.FC = () => {
               value="closed"
               className="px-4 py-2 rounded-t-xl data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary transition-colors"
             >
-              Lịch sử ({closedOrders.length})
+              Lịch sử (Gần đây)
             </Tabs.Trigger>
           </Tabs.List>
 

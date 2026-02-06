@@ -136,7 +136,7 @@ export const DepositDialog: React.FC<DepositDialogProps> = ({ isOpen, onClose, o
                                 onChange={(e) => setAmount(e.target.value)}
                                 min="10"
                             />
-                            <p className="text-xs text-muted-foreground">Tối thiểu 10 USDT. Tỷ giá 1 USDT = 25,000 VNĐ (Ví dụ)</p>
+                            <p className="text-xs text-muted-foreground">Tối thiểu 10 USDT</p>
                         </div>
 
                         <DialogFooter className="mt-6">

@@ -13,6 +13,7 @@ const PortfolioPage = lazy(() => import('./pages/portfolio-page').then(m => ({ d
 const ProfilePage = lazy(() => import('./pages/profile-page').then(m => ({ default: m.ProfilePage })));
 const SettingsPage = lazy(() => import('./pages/settings-page').then(m => ({ default: m.SettingsPage })));
 const WalletPage = lazy(() => import('./pages/wallet-page').then(m => ({ default: m.WalletPage })));
+const PublicProfilePage = lazy(() => import('./pages/public-profile-page').then(m => ({ default: m.PublicProfilePage })));
 const FeatureTour = lazy(() => import('./components/feature-tour').then(m => ({ default: m.FeatureTour })));
 
 // Admin Pages - lazy loaded
@@ -47,6 +48,7 @@ export type AppPage =
   | 'leaderboard'
   | 'portfolio'
   | 'profile'
+  | 'public-profile'
   | 'wallet'
   | 'settings'
   | 'admin-login'
@@ -63,7 +65,20 @@ export type AppPage =
   | 'admin-transactions';
 
 function App() {
+  const [viewedProfileNickname, _setViewedProfileNickname] = React.useState<string | null>(() => {
+    const path = window.location.pathname;
+    const match = path.match(/^\/u\/([^/]+)$/);
+    return match ? decodeURIComponent(match[1]) : null;
+  });
+
   const [currentPage, setCurrentPage] = React.useState<AppPage>(() => {
+    // 1. Check URL path for public profile
+    const path = window.location.pathname;
+    const match = path.match(/^\/u\/([^/]+)$/);
+    if (match) {
+      return 'public-profile';
+    }
+
     // Try to restore page from localStorage for user pages
     const saved = localStorage.getItem('currentPage') as AppPage;
     // Don't restore admin pages as they are guarded/hashed
@@ -154,6 +169,7 @@ function App() {
           {currentPage === 'leaderboard' && <LeaderboardPage />}
           {currentPage === 'portfolio' && <PortfolioPage />}
           {currentPage === 'profile' && <ProfilePage />}
+          {currentPage === 'public-profile' && <PublicProfilePage nickname={viewedProfileNickname} />}
           {currentPage === 'wallet' && <WalletPage />}
           {currentPage === 'settings' && <SettingsPage />}
         </Suspense>

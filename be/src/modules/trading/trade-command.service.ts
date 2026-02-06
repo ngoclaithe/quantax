@@ -58,16 +58,24 @@ export class TradeCommandService {
         return trade;
     }
 
-    async getMyTrades(userId: string, status?: string) {
-        return this.prisma.tradeOrder.findMany({
-            where: {
-                userId,
-                ...(status ? { status: status as any } : {}),
-            },
-            include: { pair: true, result: true },
-            orderBy: { openTime: 'desc' },
-            take: 10, // Limit 10 trades
-        });
+    async getMyTrades(userId: string, status?: string, skip: number = 0, take: number = 20) {
+        const where = {
+            userId,
+            ...(status ? { status: status as any } : {}),
+        };
+
+        const [trades, total] = await Promise.all([
+            this.prisma.tradeOrder.findMany({
+                where,
+                include: { pair: true, result: true },
+                orderBy: { openTime: 'desc' },
+                skip: Number(skip),
+                take: Number(take),
+            }),
+            this.prisma.tradeOrder.count({ where }),
+        ]);
+
+        return { trades, total };
     }
 
     async getTradeById(tradeId: string) {

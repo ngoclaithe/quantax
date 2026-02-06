@@ -25,8 +25,10 @@ export class TradingController {
     async getMyTrades(
         @Request() req: { user: { userId: string } },
         @Query('status') status?: string,
+        @Query('limit') limit: number = 20,
+        @Query('offset') offset: number = 0,
     ) {
-        return this.tradeCommandService.getMyTrades(req.user.userId, status);
+        return this.tradeCommandService.getMyTrades(req.user.userId, status, offset, limit);
     }
 
     @Get(':id')
