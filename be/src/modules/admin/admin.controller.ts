@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminConfigService } from './admin-config.service';
 import { AdminMonitoringService } from './admin-monitoring.service';
 import { PriceManipulationService } from '../oracle/price-manipulation.service';
+import { AdminBankService } from './admin-bank.service';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -11,7 +12,59 @@ export class AdminController {
         private configService: AdminConfigService,
         private monitoringService: AdminMonitoringService,
         private priceManipulation: PriceManipulationService,
+        private bankService: AdminBankService,
     ) { }
+
+    @Get('banks')
+    async getBanks() {
+        return this.bankService.getBanks();
+    }
+
+    @Post('banks')
+    async createBank(@Body() body: any) {
+        return this.bankService.createBank(body);
+    }
+
+    @Put('banks/:id')
+    async updateBank(@Param('id') id: string, @Body() body: any) {
+        return this.bankService.updateBank(id, body);
+    }
+
+    @Delete('banks/:id')
+    async deleteBank(@Param('id') id: string) {
+        return this.bankService.deleteBank(id);
+    }
+
+    @Get('deposits')
+    async getDeposits() {
+        return this.bankService.getDeposits();
+    }
+
+    @Post('deposits/:id/approve')
+    async approveDeposit(@Param('id') id: string) {
+        return this.bankService.approveDeposit(id);
+    }
+
+    @Post('deposits/:id/reject')
+    async rejectDeposit(@Param('id') id: string) {
+        return this.bankService.rejectDeposit(id);
+    }
+
+    @Get('withdraws')
+    async getWithdraws() {
+        return this.bankService.getWithdraws();
+    }
+
+    @Post('withdraws/:id/approve')
+    async approveWithdraw(@Param('id') id: string) {
+        return this.bankService.approveWithdraw(id);
+    }
+
+    @Post('withdraws/:id/reject')
+    async rejectWithdraw(@Param('id') id: string) {
+        return this.bankService.rejectWithdraw(id);
+    }
+
 
     @Get('dashboard')
     async getDashboard() {

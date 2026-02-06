@@ -42,11 +42,13 @@ export const SystemSettingsPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold mb-2">Cài đặt Hệ thống</h1>
-                <p className="text-muted-foreground">
-                    Cấu hình thông số kỹ thuật, phí giao dịch và trạng thái Oracle
-                </p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">
+                        <span className="gradient-text">Cài đặt Hệ thống</span>
+                    </h1>
+                    <p className="text-muted-foreground">Cấu hình các tham số toàn cục của sàn.</p>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

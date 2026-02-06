@@ -6,7 +6,6 @@ import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
 import { useAdminStore } from '@/stores/admin-store';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth-store';
 import { toast } from 'sonner';
 
 interface PriceData {
@@ -24,7 +23,6 @@ interface PriceTarget {
 
 export const PriceManipulationPage: React.FC = () => {
     const { isLoading } = useAdminStore();
-    const { token } = useAuthStore();
     const [prices, setPrices] = React.useState<PriceData[]>([]);
     const [activeTargets, setActiveTargets] = React.useState<PriceTarget[]>([]);
     const [selectedPair, setSelectedPair] = React.useState<string>('BTC/USD');
@@ -35,8 +33,7 @@ export const PriceManipulationPage: React.FC = () => {
     const fetchPrices = React.useCallback(async () => {
         try {
             const data = await api.get<{ prices: PriceData[]; activeTargets: PriceTarget[] }>(
-                '/admin/prices',
-                token || undefined
+                '/admin/prices'
             );
             setPrices(data.prices);
             setActiveTargets(data.activeTargets);
@@ -50,7 +47,7 @@ export const PriceManipulationPage: React.FC = () => {
         } catch (e) {
             console.error('Failed to fetch prices', e);
         }
-    }, [token, selectedPair, targetPrice]);
+    }, [selectedPair, targetPrice]);
 
     React.useEffect(() => {
         fetchPrices();
@@ -66,8 +63,7 @@ export const PriceManipulationPage: React.FC = () => {
                     pair: selectedPair,
                     targetPrice,
                     durationSeconds: duration,
-                },
-                token || undefined
+                }
             );
             toast.success(`Đã đặt giá mục tiêu ${targetPrice} cho ${selectedPair} trong ${duration}s`);
             fetchPrices();
@@ -84,8 +80,7 @@ export const PriceManipulationPage: React.FC = () => {
                 {
                     pair: selectedPair,
                     price: immediatePrice,
-                },
-                token || undefined
+                }
             );
             toast.success(`Đã đặt giá ${immediatePrice} cho ${selectedPair}`);
             fetchPrices();
@@ -97,7 +92,7 @@ export const PriceManipulationPage: React.FC = () => {
 
     const handleCancelTarget = async (pair: string) => {
         try {
-            await api.delete(`/admin/prices/target/${encodeURIComponent(pair)}`, token || undefined);
+            await api.delete(`/admin/prices/target/${encodeURIComponent(pair)}`);
             toast.success(`Đã hủy mục tiêu cho ${pair}`);
             fetchPrices();
         } catch (e) {
@@ -137,14 +132,12 @@ export const PriceManipulationPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">
                         <span className="gradient-text">Điều chỉnh Giá</span>
                     </h1>
-                    <p className="text-muted-foreground">
-                        Quản lý giá của các cặp giao dịch theo thời gian thực
-                    </p>
+                    <p className="text-muted-foreground">Can thiệp giá thị trường (Admin only).</p>
                 </div>
                 <Button variant="outline" onClick={fetchPrices} disabled={isLoading} className="gap-2">
                     <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />

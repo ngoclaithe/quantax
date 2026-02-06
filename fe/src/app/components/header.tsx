@@ -30,9 +30,6 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
     { id: 'trading', label: 'Giao dịch' },
     { id: 'copy-trade', label: 'Copy Trade' },
     { id: 'leaderboard', label: 'Bảng xếp hạng' },
-    { id: 'portfolio', label: 'Danh mục' },
-    { id: 'profile', label: 'Hồ sơ' },
-    { id: 'settings', label: 'Cài đặt' },
   ];
 
   const handleLogout = () => {
@@ -114,6 +111,12 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
                               className="w-full px-3 py-2 text-left rounded-lg hover:bg-accent/50 transition-colors text-sm"
                             >
                               Danh mục đầu tư
+                            </button>
+                            <button
+                              onClick={() => { onNavigate('wallet'); setShowUserMenu(false); }}
+                              className="w-full px-3 py-2 text-left rounded-lg hover:bg-accent/50 transition-colors text-sm"
+                            >
+                              Quản lý Nạp/Rút
                             </button>
                             <button
                               onClick={() => { onNavigate('profile'); setShowUserMenu(false); }}

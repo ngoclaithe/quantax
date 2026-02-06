@@ -12,6 +12,7 @@ const LeaderboardPage = lazy(() => import('./pages/leaderboard-page').then(m => 
 const PortfolioPage = lazy(() => import('./pages/portfolio-page').then(m => ({ default: m.PortfolioPage })));
 const ProfilePage = lazy(() => import('./pages/profile-page').then(m => ({ default: m.ProfilePage })));
 const SettingsPage = lazy(() => import('./pages/settings-page').then(m => ({ default: m.SettingsPage })));
+const WalletPage = lazy(() => import('./pages/wallet-page').then(m => ({ default: m.WalletPage })));
 const FeatureTour = lazy(() => import('./components/feature-tour').then(m => ({ default: m.FeatureTour })));
 
 // Admin Pages - lazy loaded
@@ -26,6 +27,8 @@ const SystemSettingsPage = lazy(() => import('./pages/admin/system-settings-page
 const LogsAuditPage = lazy(() => import('./pages/admin/logs-audit-page').then(m => ({ default: m.LogsAuditPage })));
 const RiskManagementPage = lazy(() => import('./pages/admin/risk-management-page').then(m => ({ default: m.RiskManagementPage })));
 const PriceManipulationPage = lazy(() => import('./pages/admin/price-manipulation-page').then(m => ({ default: m.PriceManipulationPage })));
+const BankSettingsPage = lazy(() => import('./pages/admin/bank-settings-page').then(m => ({ default: m.BankSettingsPage })));
+const AdminTransactionsPage = lazy(() => import('./pages/admin/transactions-page').then(m => ({ default: m.AdminTransactionsPage })));
 
 // Secret admin route - only you know this
 const ADMIN_SECRET_ROUTE = 'quantax-admin-2024';
@@ -44,6 +47,7 @@ export type AppPage =
   | 'leaderboard'
   | 'portfolio'
   | 'profile'
+  | 'wallet'
   | 'settings'
   | 'admin-login'
   | 'admin-dashboard'
@@ -54,10 +58,20 @@ export type AppPage =
   | 'admin-analytics'
   | 'admin-settings'
   | 'admin-logs'
-  | 'admin-prices';
+  | 'admin-prices'
+  | 'admin-banks'
+  | 'admin-transactions';
 
 function App() {
-  const [currentPage, setCurrentPage] = React.useState<AppPage>('home');
+  const [currentPage, setCurrentPage] = React.useState<AppPage>(() => {
+    // Try to restore page from localStorage for user pages
+    const saved = localStorage.getItem('currentPage') as AppPage;
+    // Don't restore admin pages as they are guarded/hashed
+    if (saved && !saved.startsWith('admin')) {
+      return saved;
+    }
+    return 'home';
+  });
   const { isAuthenticated } = useAdminStore();
 
   // Check URL hash for admin route on mount and hash change
@@ -79,6 +93,7 @@ function App() {
     // Clear hash when navigating away from admin
     if (!page.startsWith('admin')) {
       window.location.hash = '';
+      localStorage.setItem('currentPage', page); // Save state
     }
   };
 
@@ -114,6 +129,8 @@ function App() {
           {currentPage === 'admin-settings' && <SystemSettingsPage />}
           {currentPage === 'admin-logs' && <LogsAuditPage />}
           {currentPage === 'admin-prices' && <PriceManipulationPage />}
+          {currentPage === 'admin-banks' && <BankSettingsPage />}
+          {currentPage === 'admin-transactions' && <AdminTransactionsPage />}
         </AdminLayout>
         <Toaster position="top-right" richColors duration={2000} />
       </Suspense>
@@ -137,6 +154,7 @@ function App() {
           {currentPage === 'leaderboard' && <LeaderboardPage />}
           {currentPage === 'portfolio' && <PortfolioPage />}
           {currentPage === 'profile' && <ProfilePage />}
+          {currentPage === 'wallet' && <WalletPage />}
           {currentPage === 'settings' && <SettingsPage />}
         </Suspense>
       </main>

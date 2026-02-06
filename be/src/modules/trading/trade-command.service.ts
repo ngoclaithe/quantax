@@ -66,6 +66,7 @@ export class TradeCommandService {
             },
             include: { pair: true, result: true },
             orderBy: { openTime: 'desc' },
+            take: 10, // Limit 10 trades
         });
     }
 

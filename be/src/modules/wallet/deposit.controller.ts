@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 
@@ -15,9 +15,26 @@ export class DepositController {
     }
 
     @Post('deposit')
-    async createDeposit(@Request() req: any, @Body() body: { amount: number; bankId: string }) {
+    async createDeposit(@Request() req: any, @Body() body: { amount: number; bankAccountId?: string; bankId?: string }) {
         const userId = req.user.userId;
-        const codePay = this.generateCodePay();
+        const bankAccountId = body.bankAccountId || body.bankId;
+
+        if (!bankAccountId) {
+            throw new BadRequestException('Bank account ID is required');
+        }
+
+        let codePay = '';
+        let retries = 5;
+        while (retries > 0) {
+            codePay = this.generateCodePay();
+            const exists = await this.prisma.depositOrder.findUnique({ where: { codePay } });
+            if (!exists) break;
+            retries--;
+        }
+
+        if (retries === 0) {
+            throw new InternalServerErrorException('System busy, please try again');
+        }
 
         const expiredAt = new Date();
         expiredAt.setMinutes(expiredAt.getMinutes() + 15);
@@ -25,7 +42,7 @@ export class DepositController {
         const deposit = await this.prisma.depositOrder.create({
             data: {
                 userId,
-                bankAccountId: body.bankId,
+                bankAccountId,
                 amount: body.amount,
                 codePay,
                 expiredAt,

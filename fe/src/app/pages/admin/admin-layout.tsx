@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Settings, TrendingUp, Users, Shield, LogOut, Activity, FileText, Sliders, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Settings, TrendingUp, Users, Shield, LogOut, Activity, FileText, Sliders, DollarSign, CreditCard } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
 import { useAdminStore } from '@/stores/admin-store';
 
@@ -16,8 +16,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentPage, onNavigat
     { id: 'admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'admin-trades', label: 'Giám sát lệnh', icon: Activity },
     { id: 'admin-traders', label: 'Quản lý Traders', icon: Users },
+    { id: 'admin-banks', label: 'Quản lý Ngân hàng', icon: CreditCard }, // New item
     { id: 'admin-pairs', label: 'Cấu hình Pairs', icon: Sliders },
     { id: 'admin-prices', label: 'Điều chỉnh Giá', icon: DollarSign },
+    { id: 'admin-transactions', label: 'Quản lý Nạp/Rút', icon: Activity }, // Added Transactions menu item
     { id: 'admin-risk', label: 'Rủi ro & Pool', icon: Shield },
     { id: 'admin-analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'admin-settings', label: 'Cài đặt hệ thống', icon: Settings },

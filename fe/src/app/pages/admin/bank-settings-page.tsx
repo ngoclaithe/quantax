@@ -2,9 +2,11 @@ import React from 'react';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { useAdminWalletStore } from '@/stores/admin-wallet-store';
 import { Trash2, Plus } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { VIETNAM_BANKS } from '@/lib/banks';
 
 export const BankSettingsPage: React.FC = () => {
     const { banks, fetchBanks, createBank, deleteBank } = useAdminWalletStore();
@@ -27,12 +29,25 @@ export const BankSettingsPage: React.FC = () => {
         setFormData({ bankName: '', bankCode: '', accountNumber: '', accountName: '' });
     };
 
+    const handleBankSelect = (code: string) => {
+        const bank = VIETNAM_BANKS.find((b) => b.code === code);
+        if (bank) {
+            setFormData((prev) => ({
+                ...prev,
+                bankCode: bank.code,
+                bankName: bank.shortName,
+            }));
+        }
+    };
+
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold">Cài đặt Ngân hàng</h2>
-                    <p className="text-muted-foreground">Quản lý tài khoản nhận tiền nạp</p>
+                    <h1 className="text-3xl font-bold mb-2">
+                        <span className="gradient-text">Cài đặt Ngân hàng</span>
+                    </h1>
+                    <p className="text-muted-foreground">Quản lý các tài khoản ngân hàng nhận tiền.</p>
                 </div>
                 <Dialog.Root open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <Dialog.Trigger asChild>
@@ -44,25 +59,46 @@ export const BankSettingsPage: React.FC = () => {
                         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
                         <Dialog.Content className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] bg-card p-6 rounded-lg w-full max-w-md z-50 border border-border">
                             <Dialog.Title className="text-xl font-bold mb-4">Thêm tài khoản ngân hàng</Dialog.Title>
+                            <Dialog.Description className="mb-4 text-sm text-muted-foreground">
+                                Nhập thông tin tài khoản ngân hàng để nhận tiền nạp từ người dùng.
+                            </Dialog.Description>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Tên Ngân hàng</label>
-                                    <Input
-                                        value={formData.bankName}
-                                        onChange={e => setFormData({ ...formData, bankName: e.target.value })}
-                                        placeholder="Ngân hàng TMCP Ngoại Thương VN"
-                                        required
-                                    />
+                                    <label className="text-sm font-medium mb-1 block">Chọn Ngân hàng</label>
+                                    <Select onValueChange={handleBankSelect}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Chọn ngân hàng" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
+                                            {VIETNAM_BANKS.map((bank) => (
+                                                <SelectItem key={bank.code} value={bank.code}>
+                                                    {bank.code} - {bank.shortName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <div>
-                                    <label className="text-sm font-medium mb-1 block">Mã Ngân hàng (Short)</label>
-                                    <Input
-                                        value={formData.bankCode}
-                                        onChange={e => setFormData({ ...formData, bankCode: e.target.value })}
-                                        placeholder="VCB"
-                                        required
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Tên Ngân hàng</label>
+                                        <Input
+                                            value={formData.bankName}
+                                            readOnly
+                                            className="bg-muted"
+                                            placeholder="Tự động điền"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Mã (Short)</label>
+                                        <Input
+                                            value={formData.bankCode}
+                                            readOnly
+                                            className="bg-muted"
+                                            placeholder="AVC"
+                                        />
+                                    </div>
                                 </div>
+
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Số tài khoản</label>
                                     <Input

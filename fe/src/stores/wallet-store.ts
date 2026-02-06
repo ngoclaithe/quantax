@@ -8,6 +8,8 @@ interface Transaction {
   amount: number;
   txHash?: string;
   createdAt: string;
+  status?: string;
+  codePay?: string;
 }
 
 interface Wallet {
@@ -28,6 +30,7 @@ export interface WalletState {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
   fetchWallet: () => Promise<void>;
+  fetchHistory: () => Promise<void>;
 }
 
 declare global {
@@ -101,17 +104,54 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 
   fetchWallet: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
     try {
-      const wallet = await api.get<Wallet>('/wallet', token);
+      // API call now uses cookies, no token param needed
+      const wallet = await api.get<Wallet>('/wallet');
       set({
         balance: Number(wallet.balance),
         lockedBalance: Number(wallet.lockedBalance),
-        transactions: wallet.transactions,
+        // transactions: wallet.transactions, // Nếu endpoint /wallet trả về txs thì update
       });
     } catch (e) {
       console.error('Failed to fetch wallet', e);
     }
   },
+
+  fetchHistory: async () => {
+    set({ isLoading: true });
+    try {
+      const [deposits, withdraws] = await Promise.all([
+        api.get<any[]>('/wallet/deposits'),
+        api.get<any[]>('/wallet/withdraws').catch(() => []) // Handle error or empty
+      ]);
+
+      const mappedDeposits: Transaction[] = deposits.map(item => ({
+        id: item.id,
+        type: 'DEPOSIT',
+        amount: Number(item.amount),
+        status: item.status,
+        createdAt: item.createdAt,
+        codePay: item.codePay,
+      }));
+
+      const mappedWithdraws: Transaction[] = withdraws.map(item => ({
+        id: item.id,
+        type: 'WITHDRAW',
+        amount: Number(item.amount),
+        status: item.status,
+        createdAt: item.createdAt,
+      }));
+
+      const all = [...mappedDeposits, ...mappedWithdraws].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      set({ transactions: all });
+    } catch (e) {
+      console.error('Failed to fetch history', e);
+    } finally {
+      set({ isLoading: false });
+    }
+  }
 }));
+

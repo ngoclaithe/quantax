@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/ca
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { formatAddress, formatPercent, formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatPercent } from '@/lib/utils';
 
 export const TradersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -26,12 +26,12 @@ export const TradersPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Quản lý Traders</h1>
-          <p className="text-muted-foreground">
-            Giám sát và quản lý người dùng giao dịch
-          </p>
+          <h1 className="text-3xl font-bold">
+            <span className="gradient-text">Quản lý Traders</span>
+          </h1>
+          <p className="text-muted-foreground">Quản lý danh sách người dùng và trạng thái.</p>
         </div>
         <Button variant="outline" className="gap-2">
           <Filter className="h-4 w-4" />
@@ -142,9 +142,8 @@ export const TradersPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <span
-                        className={`font-semibold ${
-                          trader.pnl >= 0 ? 'text-success' : 'text-danger'
-                        }`}
+                        className={`font-semibold ${trader.pnl >= 0 ? 'text-success' : 'text-danger'
+                          }`}
                       >
                         {trader.pnl >= 0 ? '+' : ''}
                         {formatCurrency(trader.pnl)}

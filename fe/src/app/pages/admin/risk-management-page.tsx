@@ -29,11 +29,13 @@ export const RiskManagementPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold mb-2">Quản lý Rủi ro & Pool</h1>
-                <p className="text-muted-foreground">
-                    Giám sát mức độ rủi ro, thanh khoản pool và cấu hình hạn mức
-                </p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">
+                        <span className="gradient-text">Quản lý Rủi ro & Pool</span>
+                    </h1>
+                    <p className="text-muted-foreground">Theo dõi và điều chỉnh các thông số rủi ro hệ thống.</p>
+                </div>
             </div>
 
             {/* Overview Cards */}

@@ -1,4 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 import { WalletAuthService } from './wallet-auth.service';
 import { EmailAuthService } from './email-auth.service';
@@ -33,18 +34,45 @@ export class AuthController {
     ) { }
 
     @Post('login')
-    async login(@Body() body: LoginDto) {
-        return this.emailAuthService.login(body.email, body.password);
+    async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+        const result = await this.emailAuthService.login(body.email, body.password);
+        this.setCookie(res, result.accessToken);
+        return { user: result.user };
     }
 
     @Post('register')
-    async register(@Body() body: RegisterDto) {
-        return this.emailAuthService.register(body.email, body.password, body.nickname);
+    async register(@Body() body: RegisterDto, @Res({ passthrough: true }) res: Response) {
+        const result = await this.emailAuthService.register(body.email, body.password, body.nickname);
+        this.setCookie(res, result.accessToken);
+        return { user: result.user };
     }
 
     @Post('wallet/login')
-    async walletLogin(@Body() body: { walletAddress: string; signature: string }) {
-        return this.walletAuthService.loginWithWallet(body.walletAddress, body.signature);
+    async walletLogin(@Body() body: { walletAddress: string; signature: string }, @Res({ passthrough: true }) res: Response) {
+        const result = await this.walletAuthService.loginWithWallet(body.walletAddress, body.signature);
+        this.setCookie(res, result.accessToken);
+        // WalletAuthService might return only accessToken currently, let's check
+        return result;
+    }
+
+    @Post('logout')
+    async logout(@Res({ passthrough: true }) res: Response) {
+        res.cookie('access_token', '', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            expires: new Date(0),
+        });
+        return { message: 'Logged out' };
+    }
+
+    private setCookie(res: Response, token: string) {
+        res.cookie('access_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax', // Use 'lax' for local dev, 'none' for cross-domain prod if needed
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+        });
     }
 }
 

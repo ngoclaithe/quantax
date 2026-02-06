@@ -105,4 +105,24 @@ export class WalletService {
             }),
         ]);
     }
+    async finalizeWithdraw(userId: string, amount: number) {
+        const wallet = await this.prisma.wallet.findUnique({ where: { userId } });
+        if (!wallet) return;
+
+        return this.prisma.$transaction([
+            this.prisma.wallet.update({
+                where: { userId },
+                data: {
+                    lockedBalance: { decrement: amount },
+                },
+            }),
+            this.prisma.walletTransaction.create({
+                data: {
+                    walletId: wallet.id,
+                    type: 'WITHDRAW',
+                    amount: -amount,
+                },
+            }),
+        ]);
+    }
 }

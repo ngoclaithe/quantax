@@ -1,8 +1,9 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Activity, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { useTradingStore } from '@/stores/trading-store';
+import { useTradingStore, Trade } from '@/stores/trading-store';
 import { useWalletStore } from '@/stores/wallet-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import {
   AreaChart,
@@ -18,26 +19,27 @@ import {
 
 export const PortfolioPage: React.FC = () => {
   const { closedOrders, fetchMyTrades } = useTradingStore();
-  const { balance, lockedBalance, fetchWallet, isConnected } = useWalletStore();
+  const { balance, lockedBalance, fetchWallet } = useWalletStore();
+  const { isAuthenticated } = useAuthStore();
 
   React.useEffect(() => {
-    if (isConnected) {
+    if (isAuthenticated) {
       fetchMyTrades();
       fetchWallet();
     }
-  }, [isConnected, fetchMyTrades, fetchWallet]);
+  }, [isAuthenticated, fetchMyTrades, fetchWallet]);
 
   const totalTrades = closedOrders.length;
-  const winTrades = closedOrders.filter((o) => o.result?.result === 'WIN').length;
-  const loseTrades = closedOrders.filter((o) => o.result?.result === 'LOSE').length;
+  const winTrades = closedOrders.filter((o: Trade) => o.result?.result === 'WIN').length;
+  const loseTrades = closedOrders.filter((o: Trade) => o.result?.result === 'LOSE').length;
   const winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100 : 0;
 
   const totalProfit = closedOrders
-    .filter((o) => o.result?.result === 'WIN')
-    .reduce((sum, o) => sum + (o.result?.profit || 0), 0);
+    .filter((o: Trade) => o.result?.result === 'WIN')
+    .reduce((sum: number, o: Trade) => sum + (o.result?.profit || 0), 0);
   const totalLoss = closedOrders
-    .filter((o) => o.result?.result === 'LOSE')
-    .reduce((sum, o) => sum + Number(o.amount), 0);
+    .filter((o: Trade) => o.result?.result === 'LOSE')
+    .reduce((sum: number, o: Trade) => sum + Number(o.amount), 0);
   const netPnl = totalProfit - totalLoss;
   const roi = totalLoss > 0 ? (netPnl / totalLoss) * 100 : 0;
 
@@ -45,7 +47,7 @@ export const PortfolioPage: React.FC = () => {
     .slice()
     .reverse()
     .reduce(
-      (acc, order, i) => {
+      (acc: { date: string; value: number }[], order: Trade, i: number) => {
         const prevValue = i > 0 ? acc[i - 1].value : 0;
         const change =
           order.result?.result === 'WIN'
@@ -57,16 +59,16 @@ export const PortfolioPage: React.FC = () => {
         });
         return acc;
       },
-      [] as { date: string; value: number }[]
+      []
     );
 
   const tradesByPair = closedOrders.reduce(
-    (acc, order) => {
+    (acc: Record<string, number>, order: Trade) => {
       const pair = order.pair?.symbol || 'Unknown';
       acc[pair] = (acc[pair] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>
+    {}
   );
 
   const pairData = Object.entries(tradesByPair).map(([pair, count]) => ({
@@ -76,25 +78,15 @@ export const PortfolioPage: React.FC = () => {
 
   const COLORS = ['#6366f1', '#8b5cf6', '#a855f7', '#22d3ee', '#10b981'];
 
-  if (!isConnected) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="text-center py-20">
-          <Wallet className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-bold mb-2">Kết nối ví để xem danh mục</h2>
-          <p className="text-muted-foreground">
-            Vui lòng kết nối ví để xem thống kê giao dịch của bạn
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!isAuthenticated) return null;
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Danh mục đầu tư</h1>
-        <p className="text-muted-foreground">Phân tích hiệu suất giao dịch của bạn</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Danh mục đầu tư</h1>
+          <p className="text-muted-foreground">Phân tích hiệu suất giao dịch của bạn</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -174,12 +166,12 @@ export const PortfolioPage: React.FC = () => {
                     dataKey="date"
                     stroke="#888"
                     fontSize={12}
-                    tickFormatter={(value) => value.split('/')[0]}
+                    tickFormatter={(value: string) => value.split('/')[0]}
                   />
                   <YAxis
                     stroke="#888"
                     fontSize={12}
-                    tickFormatter={(value) => `$${value.toFixed(0)}`}
+                    tickFormatter={(value: number) => `$${value.toFixed(0)}`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -221,7 +213,7 @@ export const PortfolioPage: React.FC = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={(entry) => entry.name}
+                        label={(entry: any) => entry.name}
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
@@ -271,7 +263,7 @@ export const PortfolioPage: React.FC = () => {
         <CardContent>
           {closedOrders.length > 0 ? (
             <div className="space-y-3">
-              {closedOrders.slice(0, 10).map((order) => (
+              {closedOrders.slice(0, 10).map((order: Trade) => (
                 <div
                   key={order.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/50"

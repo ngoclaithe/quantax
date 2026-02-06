@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { TrendingUp, Download, Calendar } from 'lucide-react';
+import { Calendar, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { formatCurrency, formatNumber } from '@/lib/utils';
@@ -31,12 +32,12 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Analytics & Reports</h1>
-          <p className="text-muted-foreground">
-            Phân tích chi tiết về hoạt động nền tảng
-          </p>
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="gradient-text">Analytics & Reports</span>
+          </h1>
+          <p className="text-muted-foreground">Báo cáo chi tiết hoạt động hệ thống.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -60,11 +61,10 @@ export const AnalyticsPage: React.FC = () => {
           <button
             key={tf.value}
             onClick={() => setTimeframe(tf.value as any)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              timeframe === tf.value
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${timeframe === tf.value
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+              }`}
           >
             {tf.label}
           </button>
@@ -151,8 +151,8 @@ export const AnalyticsPage: React.FC = () => {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={tradingVolumeData}>
                 <XAxis dataKey="date" stroke="#888" fontSize={12} />
-                <YAxis 
-                  stroke="#888" 
+                <YAxis
+                  stroke="#888"
                   fontSize={12}
                   tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
                 />

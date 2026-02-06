@@ -50,14 +50,12 @@ export const TradingPage: React.FC = () => {
     loadCandles();
   }, [currentSymbol]);
 
-  // Connect to WebSocket and subscribe to price updates
   React.useEffect(() => {
     socketService.connect();
 
     const handlePriceUpdate = (data: { pair: string; price: number; timestamp?: number }) => {
-      console.log('🔥 Socket Price Update:', data);
+      // console.log('🔥 Socket Price Update:', data);
 
-      // Only update if symbol matches
       if (data.pair === currentSymbol) {
         updatePrice(data.price);
 
@@ -79,17 +77,16 @@ export const TradingPage: React.FC = () => {
           const newData = [...prev];
           const lastCandleIndex = newData.length - 1;
           const lastCandle = newData[lastCandleIndex];
-          const incomingPrice = Number(data.price); // Ensure number
+          const incomingPrice = Number(data.price);
 
           if (currentMinute > lastCandleTimeRef.current) {
-            // New candle
-            console.log('🕯️ OLD Candle CLOSED:', lastCandle);
-            console.log('🕯️ NEW Candle STARTED:', { time: currentMinute, price: incomingPrice });
+            // console.log('🕯️ OLD Candle CLOSED:', lastCandle);
+            // console.log('🕯️ NEW Candle STARTED:', { time: currentMinute, price: incomingPrice });
 
             lastCandleTimeRef.current = currentMinute;
             newData.push({
               time: currentMinute,
-              open: incomingPrice, // Or lastCandle.close
+              open: incomingPrice,
               high: incomingPrice,
               low: incomingPrice,
               close: incomingPrice,
@@ -98,14 +95,12 @@ export const TradingPage: React.FC = () => {
               newData.shift();
             }
           } else {
-            // Update current candle - IMMUTABLE
             const updatedCandle = { ...lastCandle };
             updatedCandle.close = incomingPrice;
             updatedCandle.high = Math.max(Number(updatedCandle.high), incomingPrice);
             updatedCandle.low = Math.min(Number(updatedCandle.low), incomingPrice);
             updatedCandle.time = currentMinute;
 
-            // Console log to debug "flat candle" issue
             // console.log(`📊 Update Candle: O:${updatedCandle.open} H:${updatedCandle.high} L:${updatedCandle.low} C:${updatedCandle.close}`);
 
             newData[lastCandleIndex] = updatedCandle;

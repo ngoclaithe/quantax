@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api } from '@/lib/api';
-import { useAuthStore } from './auth-store';
+
 
 export interface AdminStats {
   totalUsers: number;
@@ -63,10 +63,8 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   fetchDashboard: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
     try {
-      const data = await api.get<AdminStats>('/admin/dashboard', token);
+      const data = await api.get<AdminStats>('/admin/dashboard');
       set({
         stats: data,
         riskData: {
@@ -81,10 +79,8 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   fetchPairs: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
     try {
-      const pairs = await api.get<PairConfig[]>('/admin/pairs', token);
+      const pairs = await api.get<PairConfig[]>('/admin/pairs');
       set({ pairConfigs: pairs });
     } catch (e) {
       console.error('Failed to fetch pairs', e);
@@ -92,11 +88,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   createPair: async (symbol, payoutRate) => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
     set({ isLoading: true });
     try {
-      await api.post('/admin/pairs', { symbol, payoutRate }, token);
+      await api.post('/admin/pairs', { symbol, payoutRate });
       await get().fetchPairs();
     } finally {
       set({ isLoading: false });
@@ -104,11 +98,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   updatePair: async (id, data) => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
     set({ isLoading: true });
     try {
-      await api.patch(`/admin/pairs/${id}`, data, token);
+      await api.patch(`/admin/pairs/${id}`, data);
       await get().fetchPairs();
     } finally {
       set({ isLoading: false });
@@ -116,28 +108,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   pauseTrading: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
-    await api.post('/admin/system/pause', {}, token);
+    await api.post('/admin/system/pause', {});
     await get().fetchPairs();
   },
 
   resumeTrading: async () => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
-    await api.post('/admin/system/resume', {}, token);
+    await api.post('/admin/system/resume', {});
     await get().fetchPairs();
   },
 
   login: async (email, password) => {
     try {
       const response = await api.post<{
-        access_token: string;
         admin: { id: string; email: string; role: string };
       }>('/admin-auth/login', { email, password });
-
-      // Store the admin token
-      useAuthStore.getState().setToken(response.access_token);
 
       set({
         isAuthenticated: true,
@@ -150,8 +134,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
-  logout: () => {
-    useAuthStore.getState().setToken(null);
+  logout: async () => {
+    try {
+      await api.post('/admin-auth/logout', {});
+    } catch (e) {
+      console.error('Logout error', e);
+    }
     set({ isAuthenticated: false, userRole: null });
   },
 }));

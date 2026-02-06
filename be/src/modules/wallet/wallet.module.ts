@@ -4,8 +4,10 @@ import { DepositController } from './deposit.controller';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
 
+import { WithdrawController } from './withdraw.controller';
+
 @Module({
-    controllers: [AdminBankController, DepositController, WalletController],
+    controllers: [AdminBankController, DepositController, WalletController, WithdrawController],
     providers: [WalletService],
     exports: [WalletService],
 })

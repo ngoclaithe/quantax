@@ -11,23 +11,20 @@ interface User {
 }
 
 interface AuthState {
-    token: string | null;
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     isHydrated: boolean;
     loginWithEmail: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string, nickname: string) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     fetchUser: () => Promise<void>;
-    setToken: (token: string | null) => void;
     setHydrated: (hydrated: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set, get) => ({
-            token: null,
+        (set) => ({
             user: null,
             isAuthenticated: false,
             isLoading: false,
@@ -36,12 +33,11 @@ export const useAuthStore = create<AuthState>()(
             loginWithEmail: async (email: string, password: string) => {
                 set({ isLoading: true });
                 try {
-                    const res = await api.post<{ accessToken: string; user: User }>('/auth/login', {
+                    const res = await api.post<{ user: User }>('/auth/login', {
                         email,
                         password,
                     });
                     set({
-                        token: res.accessToken,
                         user: res.user,
                         isAuthenticated: true
                     });
@@ -53,13 +49,12 @@ export const useAuthStore = create<AuthState>()(
             register: async (email: string, password: string, nickname: string) => {
                 set({ isLoading: true });
                 try {
-                    const res = await api.post<{ accessToken: string; user: User }>('/auth/register', {
+                    const res = await api.post<{ user: User }>('/auth/register', {
                         email,
                         password,
                         nickname,
                     });
                     set({
-                        token: res.accessToken,
                         user: res.user,
                         isAuthenticated: true
                     });
@@ -68,26 +63,26 @@ export const useAuthStore = create<AuthState>()(
                 }
             },
 
-            logout: () => {
-                set({ token: null, user: null, isAuthenticated: false });
+            logout: async () => {
+                try {
+                    await api.post('/auth/logout', {});
+                } catch (e) {
+                    console.error('Logout failed', e);
+                }
+                set({ user: null, isAuthenticated: false });
             },
 
             fetchUser: async () => {
-                const token = get().token;
-                if (!token) return;
+                // Try fetching user to see if cookie is valid
                 set({ isLoading: true });
                 try {
-                    const user = await api.get<User>('/users/me', token);
+                    const user = await api.get<User>('/users/me');
                     set({ user, isAuthenticated: true });
                 } catch {
-                    set({ token: null, user: null, isAuthenticated: false });
+                    set({ user: null, isAuthenticated: false });
                 } finally {
                     set({ isLoading: false });
                 }
-            },
-
-            setToken: (token: string | null) => {
-                set({ token, isAuthenticated: !!token });
             },
 
             setHydrated: (hydrated: boolean) => {
@@ -97,14 +92,13 @@ export const useAuthStore = create<AuthState>()(
         {
             name: 'quantax-auth',
             partialize: (state) => ({
-                token: state.token,
                 user: state.user,
                 isAuthenticated: state.isAuthenticated,
             }),
             onRehydrateStorage: () => (state) => {
                 if (state) {
                     state.setHydrated(true);
-                    if (state.token) {
+                    if (state.isAuthenticated) {
                         state.fetchUser();
                     }
                 }

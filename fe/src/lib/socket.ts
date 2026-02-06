@@ -26,7 +26,6 @@ class SocketService {
             const listeners = this.priceListeners.get(data.pair) || [];
             listeners.forEach((listener) => listener(data.price));
 
-            // Also notify "all" listeners
             const allListeners = this.priceListeners.get('*') || [];
             allListeners.forEach((listener) => listener(data.price));
         });
@@ -53,7 +52,6 @@ class SocketService {
         }
         this.priceListeners.get(pair)!.push(callback);
 
-        // Request subscription on server
         this.socket?.emit('subscribe:price', [pair]);
     }
 

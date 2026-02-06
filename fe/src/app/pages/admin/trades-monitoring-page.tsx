@@ -34,12 +34,12 @@ export const TradesMonitoringPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Giám sát lệnh</h1>
-          <p className="text-muted-foreground">
-            Theo dõi các giao dịch real-time
-          </p>
+          <h1 className="text-3xl font-bold mb-2">
+            <span className="gradient-text">Giám sát lệnh</span>
+          </h1>
+          <p className="text-muted-foreground">Theo dõi hoạt động giao dịch realtime.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
@@ -91,11 +91,10 @@ export const TradesMonitoringPage: React.FC = () => {
           <button
             key={tab.value}
             onClick={() => setFilter(tab.value as any)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === tab.value
+            className={`px-4 py-2 rounded-lg transition-colors ${filter === tab.value
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
+              }`}
           >
             {tab.label}
           </button>

@@ -19,12 +19,12 @@ export const LogsAuditPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex justify-between items-end">
                 <div>
-                    <h1 className="text-3xl font-bold mb-2">Logs & Audit</h1>
-                    <p className="text-muted-foreground">
-                        Lịch sử hoạt động và log hệ thống
-                    </p>
+                    <h1 className="text-3xl font-bold mb-2">
+                        <span className="gradient-text">Logs & Audit</span>
+                    </h1>
+                    <p className="text-muted-foreground">Nhật ký hoạt động và audit trail.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" className="gap-2">
