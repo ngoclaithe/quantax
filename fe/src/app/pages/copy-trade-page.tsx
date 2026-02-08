@@ -1,6 +1,8 @@
 import React from 'react';
 import { TrendingUp, Users, Copy, XCircle } from 'lucide-react';
 import { useCopyTradeStore } from '@/stores/copy-trade-store';
+import { useAuthStore } from '@/stores/auth-store';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
@@ -9,7 +11,12 @@ import { formatPercent, formatNumber } from '@/lib/utils';
 import * as Dialog from '@radix-ui/react-dialog';
 import { toast } from 'sonner';
 
-export const CopyTradePage: React.FC = () => {
+interface CopyTradePageProps {
+  onNavigate?: (page: string) => void;
+  onOpenLogin?: () => void;
+}
+
+export const CopyTradePage: React.FC<CopyTradePageProps> = ({ onNavigate, onOpenLogin }) => {
   const { traders, following, fetchTraders, fetchFollowing, followTrader, unfollowTrader, isLoading } =
     useCopyTradeStore();
   const [selectedTrader, setSelectedTrader] = React.useState<string | null>(null);
@@ -22,7 +29,15 @@ export const CopyTradePage: React.FC = () => {
     fetchFollowing();
   }, [fetchTraders, fetchFollowing]);
 
+  const { isAuthenticated } = useAuthStore();
+
+
   const handleCopy = async (traderId: string) => {
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+      if (onOpenLogin) onOpenLogin();
+      return;
+    }
     await followTrader(traderId, copyType, copyValue, maxAmount);
     toast.success('Đã bắt đầu copy trader!');
     setSelectedTrader(null);
@@ -161,29 +176,36 @@ export const CopyTradePage: React.FC = () => {
                     </div>
                   </div>
 
+                  <Button
+                    variant={copied ? 'outline' : 'default'}
+                    className="w-full gap-2"
+                    disabled={copied || isLoading}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        toast.error('Vui lòng đăng nhập để sử dụng tính năng này');
+                        if (onOpenLogin) onOpenLogin();
+                        return;
+                      }
+                      setSelectedTrader(trader.userId);
+                    }}
+                  >
+                    {copied ? (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Đang copy
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy trader
+                      </>
+                    )}
+                  </Button>
+
                   <Dialog.Root
                     open={selectedTrader === trader.userId}
                     onOpenChange={(open) => setSelectedTrader(open ? trader.userId : null)}
                   >
-                    <Dialog.Trigger asChild>
-                      <Button
-                        variant={copied ? 'outline' : 'default'}
-                        className="w-full gap-2"
-                        disabled={copied || isLoading}
-                      >
-                        {copied ? (
-                          <>
-                            <Copy className="h-4 w-4" />
-                            Đang copy
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4" />
-                            Copy trader
-                          </>
-                        )}
-                      </Button>
-                    </Dialog.Trigger>
 
                     <Dialog.Portal>
                       <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
@@ -191,6 +213,9 @@ export const CopyTradePage: React.FC = () => {
                         <Dialog.Title className="text-xl font-bold mb-4">
                           Cài đặt Copy Trade
                         </Dialog.Title>
+                        <Dialog.Description className="text-sm text-muted-foreground mb-4">
+                          Tùy chỉnh các thông số để sao chép giao dịch từ trader này. Lưu ý quản lý rủi ro của bạn.
+                        </Dialog.Description>
 
                         <div className="space-y-4">
                           <div>

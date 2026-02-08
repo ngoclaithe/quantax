@@ -52,7 +52,7 @@ export class TradeCommandService {
 
         this.eventEmitter.emit(
             'trade.created',
-            new TradeCreatedEvent(trade.id, userId, pair.id, direction, amount),
+            new TradeCreatedEvent(trade.id, userId, pair.id, direction, amount, timeframeSec),
         );
 
         return trade;

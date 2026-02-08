@@ -3,7 +3,7 @@ import { Clock } from 'lucide-react';
 import { Trade } from '@/stores/trading-store';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { formatCurrency, formatTime } from '@/lib/utils';
+import { formatCurrency, formatTime, formatDate } from '@/lib/utils';
 
 interface OrderListProps {
   orders: Trade[];
@@ -63,6 +63,9 @@ export const OrderList: React.FC<OrderListProps> = ({ orders, title, type }) => 
                         {formatTime(Math.floor(timeLeft / 1000))}
                       </div>
                     )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    {formatDate(order.createdAt!)}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-sm">

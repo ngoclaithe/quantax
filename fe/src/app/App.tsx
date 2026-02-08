@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { Header } from './components/header';
 import { Footer } from './components/footer';
 import { useAdminStore } from '@/stores/admin-store';
+import { AuthDrawer } from './components/auth-drawer';
 
 // Lazy load all pages for code splitting
 const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
@@ -14,7 +15,7 @@ const ProfilePage = lazy(() => import('./pages/profile-page').then(m => ({ defau
 const SettingsPage = lazy(() => import('./pages/settings-page').then(m => ({ default: m.SettingsPage })));
 const WalletPage = lazy(() => import('./pages/wallet-page').then(m => ({ default: m.WalletPage })));
 const PublicProfilePage = lazy(() => import('./pages/public-profile-page').then(m => ({ default: m.PublicProfilePage })));
-const FeatureTour = lazy(() => import('./components/feature-tour').then(m => ({ default: m.FeatureTour })));
+
 
 // Admin Pages - lazy loaded
 const AdminLoginPage = lazy(() => import('./pages/admin/login-page').then(m => ({ default: m.AdminLoginPage })));
@@ -89,6 +90,8 @@ function App() {
   });
   const { isAuthenticated } = useAdminStore();
 
+  const [showAuthDrawer, setShowAuthDrawer] = React.useState(false);
+
   // Check URL hash for admin route on mount and hash change
   React.useEffect(() => {
     const checkAdminRoute = () => {
@@ -159,13 +162,14 @@ function App() {
         onNavigate={handleNavigate}
         currentPage={currentPage}
         isAdmin={false}
+        onOpenLogin={() => setShowAuthDrawer(true)}
       />
 
       <main>
         <Suspense fallback={<PageLoader />}>
           {currentPage === 'home' && <HomePage onNavigate={handleNavigate} />}
           {currentPage === 'trading' && <TradingPage />}
-          {currentPage === 'copy-trade' && <CopyTradePage />}
+          {currentPage === 'copy-trade' && <CopyTradePage onNavigate={handleNavigate} onOpenLogin={() => setShowAuthDrawer(true)} />}
           {currentPage === 'leaderboard' && <LeaderboardPage />}
           {currentPage === 'portfolio' && <PortfolioPage />}
           {currentPage === 'profile' && <ProfilePage />}
@@ -177,10 +181,9 @@ function App() {
 
       <Footer />
 
-      {/* Feature Tour - lazy loaded */}
-      <Suspense fallback={null}>
-        <FeatureTour onNavigate={handleNavigate} />
-      </Suspense>
+
+
+      <AuthDrawer isOpen={showAuthDrawer} onClose={() => setShowAuthDrawer(false)} />
 
       <Toaster position="top-right" richColors duration={2000} />
     </div>

@@ -3,16 +3,17 @@ import { User, Menu, LogOut, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useWalletStore } from '@/stores/wallet-store';
 import { Button } from './ui/button';
-import { AuthDrawer } from './auth-drawer';
+
 import { formatCurrency } from '@/lib/utils';
 
 interface HeaderProps {
   onNavigate: (page: string) => void;
+  onOpenLogin: () => void;
   currentPage: string;
   isAdmin?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin = false }) => {
+export const Header: React.FC<HeaderProps> = ({ onNavigate, onOpenLogin, currentPage, isAdmin = false }) => {
   const { isAuthenticated, user, logout, isLoading } = useAuthStore();
   const { balance, fetchWallet } = useWalletStore();
   const [showMenu, setShowMenu] = React.useState(false);
@@ -22,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
       fetchWallet();
     }
   }, [isAuthenticated, fetchWallet]);
-  const [showAuthDrawer, setShowAuthDrawer] = React.useState(false);
+
   const [showUserMenu, setShowUserMenu] = React.useState(false);
 
   const userMenuItems = [
@@ -147,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => setShowAuthDrawer(true)}
+                      onClick={onOpenLogin}
                       disabled={isLoading}
                       className="gap-2 glow-primary"
                     >
@@ -191,11 +192,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPage, isAdmin
         </div>
       </header>
 
-      {/* Auth Drawer */}
-      <AuthDrawer
-        isOpen={showAuthDrawer}
-        onClose={() => setShowAuthDrawer(false)}
-      />
+
 
       {/* Click outside to close user menu */}
       {showUserMenu && (

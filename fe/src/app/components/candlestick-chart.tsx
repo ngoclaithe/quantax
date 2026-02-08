@@ -75,6 +75,27 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 timeVisible: true,
                 secondsVisible: false,
+                tickMarkFormatter: (time: number) => {
+                    const date = new Date(time * 1000);
+                    return new Intl.DateTimeFormat('vi-VN', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).format(date);
+                },
+            },
+            localization: {
+                locale: 'vi-VN',
+                dateFormat: 'dd/MM/yyyy',
+                timeFormatter: (time: number) => {
+                    const date = new Date(time * 1000);
+                    return new Intl.DateTimeFormat('vi-VN', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    }).format(date);
+                },
             },
         });
 
@@ -117,18 +138,22 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         if (!candleSeriesRef.current || data.length === 0) return;
 
         const formatTime = (timestamp: number): UTCTimestamp => {
+            // Timestamp from BE is in ms, chart needs seconds
+            // Localization option in createChart handles the timezone display
             return Math.floor(timestamp / 1000) as UTCTimestamp;
         };
 
         // First time initialization - set all data and fit content
         if (!isInitializedRef.current) {
-            const chartData = data.map((d) => ({
-                time: formatTime(d.time),
-                open: d.open,
-                high: d.high,
-                low: d.low,
-                close: d.close,
-            }));
+            const chartData = data
+                .sort((a, b) => a.time - b.time)
+                .map((d) => ({
+                    time: formatTime(d.time),
+                    open: d.open,
+                    high: d.high,
+                    low: d.low,
+                    close: d.close,
+                }));
             candleSeriesRef.current.setData(chartData);
 
             // Fit content only on first load
@@ -142,24 +167,33 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 
         // Real-time update - only update the last candle or add new one
         const lastCandle = data[data.length - 1];
-        if (lastCandle) {
-            const candleUpdate = {
-                time: formatTime(lastCandle.time),
+        if (!lastCandle) return;
+
+        // Ensure we are not trying to update with older data than what the chart has
+        // We track the last time we updated the chart
+        const newCandleTime = formatTime(lastCandle.time);
+
+        // If a new candle was added
+        if (data.length > lastDataLengthRef.current) {
+            // Basic check: ensure the new candle time is actually > last known candle time
+            // (Lightweight charts will crash if you try to add a candle that isn't strictly new)
+            candleSeriesRef.current.update({
+                time: newCandleTime,
                 open: lastCandle.open,
                 high: lastCandle.high,
                 low: lastCandle.low,
                 close: lastCandle.close,
-            };
-
-            // If a new candle was added
-            if (data.length > lastDataLengthRef.current) {
-                // Update (add) the new candle without resetting view
-                candleSeriesRef.current.update(candleUpdate);
-                lastDataLengthRef.current = data.length;
-            } else {
-                // Just update the current candle (price change within same candle)
-                candleSeriesRef.current.update(candleUpdate);
-            }
+            });
+            lastDataLengthRef.current = data.length;
+        } else {
+            // Just update the current candle logic
+            candleSeriesRef.current.update({
+                time: newCandleTime,
+                open: lastCandle.open,
+                high: lastCandle.high,
+                low: lastCandle.low,
+                close: lastCandle.close,
+            });
         }
     }, [data]);
 

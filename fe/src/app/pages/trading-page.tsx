@@ -74,15 +74,21 @@ export const TradingPage: React.FC = () => {
             }];
           }
 
+          // Important: Only process if time is >= last candle time
+          const lastIndex = prev.length - 1;
+          const lastCandle = prev[lastIndex];
+
+          if (currentMinute < lastCandle.time) {
+            // Ignore out-of-order old packets
+            return prev;
+          }
+
+          // ... rest of logic ...
           const newData = [...prev];
-          const lastCandleIndex = newData.length - 1;
-          const lastCandle = newData[lastCandleIndex];
           const incomingPrice = Number(data.price);
 
-          if (currentMinute > lastCandleTimeRef.current) {
-            // console.log('🕯️ OLD Candle CLOSED:', lastCandle);
-            // console.log('🕯️ NEW Candle STARTED:', { time: currentMinute, price: incomingPrice });
-
+          if (currentMinute > lastCandle.time) {
+            // New Candle
             lastCandleTimeRef.current = currentMinute;
             newData.push({
               time: currentMinute,
@@ -91,21 +97,16 @@ export const TradingPage: React.FC = () => {
               low: incomingPrice,
               close: incomingPrice,
             });
-            if (newData.length > 200) {
-              newData.shift();
-            }
+            if (newData.length > 200) newData.shift();
           } else {
+            // Update Existing Candle
             const updatedCandle = { ...lastCandle };
             updatedCandle.close = incomingPrice;
             updatedCandle.high = Math.max(Number(updatedCandle.high), incomingPrice);
             updatedCandle.low = Math.min(Number(updatedCandle.low), incomingPrice);
-            updatedCandle.time = currentMinute;
-
-            // console.log(`📊 Update Candle: O:${updatedCandle.open} H:${updatedCandle.high} L:${updatedCandle.low} C:${updatedCandle.close}`);
-
-            newData[lastCandleIndex] = updatedCandle;
+            // updatedCandle.time is already correct
+            newData[lastIndex] = updatedCandle;
           }
-
           return newData;
         });
       }
@@ -151,6 +152,7 @@ export const TradingPage: React.FC = () => {
             </div>
             <div className="h-[calc(100%-60px)]">
               <CandlestickChart
+                key={currentSymbol}
                 data={candleData}
                 currentPrice={currentPrice}
                 activeOrders={activeOrders}

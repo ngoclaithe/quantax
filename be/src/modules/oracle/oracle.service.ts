@@ -56,8 +56,60 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
 
     constructor(private prisma: PrismaService) { }
 
-    onModuleInit() {
+    async onModuleInit() {
         this.connectToBinance();
+        await this.crawlHistoryOnStart();
+    }
+
+    private async crawlHistoryOnStart() {
+        this.logger.log('Starting historical data crawl...');
+        const pairs = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT'];
+
+        for (const symbol of pairs) {
+            try {
+                // Fetch last 100 candles (1m interval)
+                const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=1000`);
+                if (!response.ok) {
+                    this.logger.error(`Failed to fetch history for ${symbol}: ${response.statusText}`);
+                    continue;
+                }
+
+                const data = await response.json() as any[];
+                if (!Array.isArray(data)) continue;
+
+                const normalizedSymbol = this.normalizeSymbol(symbol);
+                const candles = data.map(k => ({
+                    symbol: normalizedSymbol,
+                    time: new Date(k[0]), // Open time
+                    open: k[1],  // specific type mapping might be needed by prisma decimal, let's keep as string or number depending on schema? 
+                    // Schema checks: Decimal. Pradma accepts string or number for Decimal.
+                    // But k[1] is string from Binance.
+                    high: k[2],
+                    low: k[3],
+                    close: k[4],
+                    volume: k[5],
+                }));
+
+                // Use createMany with skipDuplicates
+                await this.prisma.priceCandle.createMany({
+                    data: candles.map(c => ({
+                        symbol: c.symbol,
+                        time: c.time,
+                        open: c.open, // String is fine for Decimal
+                        high: c.high,
+                        low: c.low,
+                        close: c.close,
+                        volume: c.volume,
+                    })),
+                    skipDuplicates: true,
+                });
+
+                this.logger.log(`Crawled ${candles.length} candles for ${symbol}`);
+            } catch (error) {
+                this.logger.error(`Error crawling history for ${symbol}`, error);
+            }
+        }
+        this.logger.log('Historical data crawl completed');
     }
 
     onModuleDestroy() {
@@ -154,8 +206,21 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
         // 3. If candle closed, save to DB
         if (kline.k.x) {
             try {
-                await this.prisma.priceCandle.create({
-                    data: {
+                await this.prisma.priceCandle.upsert({
+                    where: {
+                        symbol_time: {
+                            symbol,
+                            time: new Date(kline.k.t),
+                        },
+                    },
+                    update: {
+                        open: candle.open,
+                        high: candle.high,
+                        low: candle.low,
+                        close: candle.close,
+                        volume: parseFloat(kline.k.v),
+                    },
+                    create: {
                         symbol,
                         time: new Date(kline.k.t),
                         open: candle.open,

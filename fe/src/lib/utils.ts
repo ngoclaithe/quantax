@@ -12,6 +12,18 @@ export function formatNumber(num: number, decimals: number = 2): string {
   }).format(num);
 }
 
+export function formatDate(date: string | number | Date): string {
+  return new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(new Date(date));
+}
+
 export function formatCurrency(num: number, currency: string = 'USDT'): string {
   return `${formatNumber(num)} ${currency}`;
 }

@@ -5,6 +5,7 @@ export class TradeCreatedEvent {
         public readonly pairId: string,
         public readonly direction: 'UP' | 'DOWN',
         public readonly amount: number,
+        public readonly timeframe: number,
     ) { }
 }
 
